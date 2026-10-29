@@ -1,0 +1,13 @@
+# Downloaded packages (rebuilt with "npm install")
+node_modules/
+
+# Built installer (made with "npm run dist")
+dist/
+
+# Local backups and old test files
+backup-*/
+test.js
+
+# Logs
+*.log
+npm-debug.log*
