@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Tater Talk - Alerts</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+  <style>
+    /* Theme colors (match the app) */
+    body, body[data-theme="galactic"] { --panel: rgba(13,17,36,.94); --border: #1f2a52; --text: #e9ecff; --accent: #ffe81f; --glow: #4fc3ff; --good: #5dff7a; }
+    body[data-theme="darkside"] { --panel: rgba(22,7,9,.94); --border: #4a1218; --text: #ffe6e6; --accent: #ff3b3b; --glow: #ff2a2a; --good: #5dff7a; }
+    body[data-theme="rebel"] { --panel: rgba(24,19,11,.94); --border: #4a3618; --text: #fff3e2; --accent: #ff9d2e; --glow: #5dff7a; --good: #5dff7a; }
+    body[data-theme="hologram"] { --panel: rgba(7,26,43,.94); --border: #145079; --text: #d8f4ff; --accent: #7fdcff; --glow: #7fdcff; --good: #7fffd4; }
+    body[data-theme="classic"] { --panel: rgba(28,31,39,.94); --border: #2a2e39; --text: #e8e8ec; --accent: #f5b942; --glow: #f5b942; --good: #5fd38d; }
+
+    html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+    body { font-family: "Segoe UI", Arial, sans-serif; color: var(--text); --pixel: 'Press Start 2P', monospace; }
+    body.no-pixel { --pixel: "Segoe UI", Arial, sans-serif; }
+
+    #stage { position: absolute; inset: 0; display: flex; justify-content: center; align-items: flex-start; padding-top: 24px; }
+
+    .alert {
+      display: flex; align-items: center; gap: 22px;
+      max-width: 90%;
+      padding: 22px 34px 22px 24px;
+      background: var(--panel);
+      border: 3px solid var(--glow);
+      border-radius: 10px;
+      box-shadow: 6px 6px 0 rgba(0,0,0,.6), 0 0 24px var(--glow), inset 0 0 18px rgba(0,0,0,.4);
+      animation: popIn .45s cubic-bezier(.2, 1.6, .4, 1) both, glowPulse 1.6s ease-in-out .45s infinite;
+    }
+    .alert.leaving { animation: popOut .4s ease-in both; }
+    .alert.follow { border-color: var(--good); box-shadow: 6px 6px 0 rgba(0,0,0,.6), 0 0 24px var(--good); }
+    .alert.intro, .alert.raid { border-color: #c77dff; box-shadow: 6px 6px 0 rgba(0,0,0,.6), 0 0 24px #c77dff; }
+    .alert.twitch { border-color: #9146ff; box-shadow: 6px 6px 0 rgba(0,0,0,.6), 0 0 24px #9146ff; }
+    .alert.youtube { border-color: #ff0033; box-shadow: 6px 6px 0 rgba(0,0,0,.6), 0 0 24px #ff0033; }
+    .note { font-size: 18px; font-style: italic; opacity: .9; max-width: 520px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 2px 3px rgba(0,0,0,.9); }
+
+    .tater svg { width: 110px; height: 88px; display: block; animation: bounce .9s ease-in-out infinite; }
+    .blade { filter: drop-shadow(0 0 0.5px var(--glow)) drop-shadow(0 0 1.2px var(--glow)); }
+
+    .words { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+    .title {
+      font-family: var(--pixel); font-size: 15px; letter-spacing: 1px;
+      color: var(--accent); text-shadow: 0 0 10px var(--accent);
+    }
+    body.no-pixel .title { font-size: 20px; font-weight: 800; }
+    .who {
+      font-size: 36px; font-weight: 900; line-height: 1.1;
+      text-shadow: 0 3px 4px rgba(0,0,0,.9);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .what { font-size: 22px; font-weight: 600; opacity: .95; text-shadow: 0 2px 3px rgba(0,0,0,.9); }
+    .giftImg { width: 84px; height: 84px; object-fit: contain; filter: drop-shadow(0 0 10px var(--accent)); animation: spinIn .6s ease-out both; }
+
+    @keyframes popIn { from { opacity: 0; transform: translateY(-60px) scale(.6); } to { opacity: 1; transform: none; } }
+    @keyframes popOut { to { opacity: 0; transform: translateY(-40px) scale(.8); } }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    @keyframes spinIn { from { transform: rotate(-200deg) scale(0); } to { transform: none; } }
+    @keyframes glowPulse { 50% { filter: brightness(1.15); } }
+  </style>
+</head>
+<body data-theme="galactic">
+  <div id="stage"></div>
+
+  <script>
+    const TATER_SVG = `
+<svg viewBox="0 0 20 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
+  <rect class="blade" x="15" y="0" width="1" height="9" style="fill:var(--glow)"/>
+  <rect x="15" y="9" width="1" height="3" fill="#9aa3b5"/>
+  <rect x="15" y="10" width="1" height="1" fill="#5b6275"/>
+  <rect x="5" y="3" width="6" height="1" fill="#c8924a"/>
+  <rect x="4" y="4" width="8" height="1" fill="#c8924a"/>
+  <rect x="3" y="5" width="10" height="2" fill="#c8924a"/>
+  <rect x="2" y="7" width="11" height="1" fill="#c8924a"/>
+  <rect x="2" y="8" width="12" height="3" fill="#c8924a"/>
+  <rect x="3" y="11" width="11" height="1" fill="#c8924a"/>
+  <rect x="3" y="12" width="10" height="1" fill="#c8924a"/>
+  <rect x="4" y="13" width="8" height="1" fill="#9b6a35"/>
+  <rect x="5" y="14" width="5" height="1" fill="#9b6a35"/>
+  <rect x="13" y="8" width="1" height="4" fill="#9b6a35"/>
+  <rect x="12" y="5" width="1" height="3" fill="#9b6a35"/>
+  <rect x="14" y="10" width="1" height="1" fill="#c8924a"/>
+  <rect x="5" y="4" width="3" height="1" fill="#e9b874"/>
+  <rect x="4" y="5" width="1" height="2" fill="#e9b874"/>
+  <rect x="9" y="5" width="1" height="1" fill="#8a5a2b"/>
+  <rect x="4" y="11" width="1" height="1" fill="#8a5a2b"/>
+  <rect x="11" y="12" width="1" height="1" fill="#8a5a2b"/>
+  <rect x="6" y="7" width="1" height="2" fill="#1a0f05"/>
+  <rect x="10" y="7" width="1" height="2" fill="#1a0f05"/>
+  <rect x="5" y="9" width="1" height="1" fill="#e07a5f"/>
+  <rect x="11" y="9" width="1" height="1" fill="#e07a5f"/>
+  <rect x="6" y="10" width="1" height="1" fill="#1a0f05"/>
+  <rect x="7" y="11" width="3" height="1" fill="#1a0f05"/>
+  <rect x="10" y="10" width="1" height="1" fill="#1a0f05"/>
+</svg>`;
+
+    let S = {
+      theme: 'galactic', pixel: true,
+      wAlertGifts: true, wAlertFollows: true, wAlertIntros: true,
+      wAlertSubs: true, wAlertBits: true, wAlertRaids: true, wAlertSuper: true,
+      wAlertMinCoins: 1, wAlertSeconds: 5
+    };
+    const stage = document.getElementById('stage');
+    const queue = [];
+    let showing = false;
+
+    function applySettings() {
+      document.body.dataset.theme = S.theme || 'galactic';
+      document.body.classList.toggle('no-pixel', !S.pixel);
+    }
+
+    function div(cls, text) {
+      const e = document.createElement('div');
+      e.className = cls;
+      if (text != null) e.textContent = text;
+      return e;
+    }
+
+    function showNext() {
+      if (showing || !queue.length) return;
+      showing = true;
+      const a = queue.shift();
+
+      const box = div('alert ' + a.type);
+      const tater = div('tater');
+      tater.innerHTML = TATER_SVG;
+      box.appendChild(tater);
+
+      const words = div('words');
+      words.appendChild(div('title', a.title));
+      words.appendChild(div('who', a.who));
+      words.appendChild(div('what', a.what));
+      if (a.note) words.appendChild(div('note', '"' + a.note + '"'));
+      box.appendChild(words);
+
+      if (a.image) {
+        const img = document.createElement('img');
+        img.className = 'giftImg';
+        img.src = a.image;
+        img.onerror = () => img.remove();
+        box.appendChild(img);
+      }
+
+      stage.innerHTML = '';
+      stage.appendChild(box);
+
+      const seconds = Math.max(2, Number(S.wAlertSeconds) || 5);
+      setTimeout(() => {
+        box.classList.add('leaving');
+        setTimeout(() => {
+          box.remove();
+          showing = false;
+          setTimeout(showNext, 250);
+        }, 420);
+      }, seconds * 1000);
+    }
+
+    function addAlert(a) {
+      if (queue.length > 15) return; // don't fall too far behind
+      queue.push(a);
+      showNext();
+    }
+
+    function onEvent(ev) {
+      const name = ev.name || 'someone';
+      if (ev.kind === 'gift' && S.wAlertGifts) {
+        const count = Number(ev.count) || 1;
+        const total = (Number(ev.coins) || 0) * count;
+        if (!ev.test && total < (Number(S.wAlertMinCoins) || 0)) return;
+        addAlert({
+          type: 'gift', title: '🎁 NEW GIFT!', who: name,
+          what: 'sent ' + ev.giftName + (count > 1 ? ' x' + count : '') + '!',
+          image: ev.image || ''
+        });
+      } else if (ev.kind === 'follow' && S.wAlertFollows) {
+        addAlert({ type: 'follow', title: '💚 NEW FOLLOWER!', who: name, what: 'Welcome to the tater crew!' });
+      } else if (ev.kind === 'intro' && S.wAlertIntros) {
+        addAlert({ type: 'intro', title: '🎬 INCOMING!', who: name, what: 'has entered the stream!' });
+      } else if (ev.kind === 'sub' && S.wAlertSubs) {
+        addAlert({ type: 'twitch', title: '⭐ NEW SUB!', who: name,
+          what: (ev.months > 1 ? 'resubscribed for ' + ev.months + ' months!' : 'just subscribed!') });
+      } else if (ev.kind === 'subgift' && S.wAlertSubs) {
+        addAlert({ type: 'twitch', title: '🎁 GIFTED SUBS!', who: name,
+          what: (ev.count > 1 ? 'gifted ' + ev.count + ' subs!' : 'gifted a sub' + (ev.recipient ? ' to ' + ev.recipient : '') + '!') });
+      } else if (ev.kind === 'bits' && S.wAlertBits) {
+        addAlert({ type: 'twitch', title: '💎 BITS!', who: name, what: 'cheered ' + ev.amount + ' bits!', note: ev.text || '' });
+      } else if (ev.kind === 'raid' && S.wAlertRaids) {
+        addAlert({ type: 'raid', title: '🚀 RAID INCOMING!', who: name, what: 'is raiding with ' + ev.viewers + ' viewers!' });
+      } else if (ev.kind === 'superchat' && S.wAlertSuper) {
+        addAlert({ type: 'youtube', title: '💵 SUPER CHAT!', who: name, what: 'sent ' + ev.amount + '!', note: ev.text || '' });
+      }
+    }
+
+    // Listen to Tater Talk (reconnects by itself if the app restarts)
+    const stream = new EventSource('/events');
+    stream.onmessage = e => {
+      let m;
+      try { m = JSON.parse(e.data); } catch (x) { return; }
+      if (m.type === 'settings') { S = Object.assign(S, m.data || {}); applySettings(); }
+      else if (m.type === 'event') onEvent(m.data || {});
+    };
+
+    applySettings();
+  </script>
+</body>
+</html>

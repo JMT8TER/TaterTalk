@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Tater Talk - Chat Overlay</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+  <style>
+    /* Theme colors (match the app) */
+    body, body[data-theme="galactic"] { --panel: rgba(13,17,36,.88); --border: #1f2a52; --text: #e9ecff; --accent: #ffe81f; --glow: #4fc3ff; --good: #5dff7a; }
+    body[data-theme="darkside"] { --panel: rgba(22,7,9,.88); --border: #4a1218; --text: #ffe6e6; --accent: #ff3b3b; --glow: #ff2a2a; --good: #5dff7a; }
+    body[data-theme="rebel"] { --panel: rgba(24,19,11,.88); --border: #4a3618; --text: #fff3e2; --accent: #ff9d2e; --glow: #5dff7a; --good: #5dff7a; }
+    body[data-theme="hologram"] { --panel: rgba(7,26,43,.88); --border: #145079; --text: #d8f4ff; --accent: #7fdcff; --glow: #7fdcff; --good: #7fffd4; }
+    body[data-theme="classic"] { --panel: rgba(28,31,39,.88); --border: #2a2e39; --text: #e8e8ec; --accent: #f5b942; --glow: #f5b942; --good: #5fd38d; }
+
+    html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+    body { font-family: "Segoe UI", Arial, sans-serif; color: var(--text); font-size: 20px; }
+
+    #list {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      padding: 10px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .m {
+      padding: .4em .7em;
+      border-radius: 6px;
+      line-height: 1.35;
+      font-weight: 600;
+      text-shadow: 0 2px 3px rgba(0,0,0,.95), 0 0 2px rgba(0,0,0,.95);
+      word-wrap: break-word;
+      animation: slideIn .25s ease-out;
+      transition: opacity .6s;
+    }
+    body.boxes .m {
+      background: var(--panel);
+      border: 2px solid var(--border);
+      border-left: 5px solid var(--border);
+      box-shadow: 3px 3px 0 rgba(0,0,0,.5);
+    }
+    .m .n { font-weight: 800; color: var(--glow); margin-right: .45em; }
+    body.pixel .m .n { font-family: 'Press Start 2P', monospace; font-size: .62em; font-weight: 400; letter-spacing: .5px; }
+    body.boxes .m.gift { border-left-color: var(--accent); }
+    .m.gift .n { color: var(--accent); }
+    body.boxes .m.follow { border-left-color: var(--good); }
+    .m.follow .n { color: var(--good); }
+    .m.join { opacity: .75; }
+    .m.out { opacity: 0; }
+    .tag {
+      font-size: .55em; font-weight: 800; padding: .1em .4em; border-radius: 3px;
+      margin-right: .45em; vertical-align: middle; text-shadow: none;
+    }
+    .tag.host { background: var(--accent); color: #111; }
+    .tag.mod { background: #2f7de1; color: #fff; }
+    .tag.fan { background: #c94fd6; color: #fff; }
+    .pf { font-size: .55em; font-weight: 800; padding: .1em .4em; border-radius: 3px; margin-right: .45em; vertical-align: middle; color: #fff; text-shadow: none; }
+    .pf.tiktok { background: #fe2c55; } .pf.twitch { background: #9146ff; } .pf.youtube { background: #ff0033; }
+    body.boxes .m.money { border-left-color: var(--accent); }
+    .m.money .n { color: var(--accent); }
+    body.boxes .m.raid { border-left-color: #c77dff; }
+    .m.raid .n { color: #d9a8ff; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+  </style>
+</head>
+<body class="boxes pixel" data-theme="galactic">
+  <div id="list"></div>
+
+  <script>
+    let S = {
+      theme: 'galactic', pixel: true,
+      wChatGifts: true, wChatFollows: true, wChatJoins: false, wChatBg: true, wChatIcons: true,
+      wChatTiktok: true, wChatTwitch: true, wChatYoutube: true,
+      wChatFontSize: 20, wChatMax: 12, wChatFade: 0
+    };
+    const list = document.getElementById('list');
+
+    function applySettings() {
+      document.body.dataset.theme = S.theme || 'galactic';
+      document.body.classList.toggle('boxes', !!S.wChatBg);
+      document.body.classList.toggle('pixel', !!S.pixel);
+      document.body.style.fontSize = (Number(S.wChatFontSize) || 20) + 'px';
+      trim();
+    }
+
+    function trim() {
+      const max = Number(S.wChatMax) || 12;
+      while (list.children.length > max) list.removeChild(list.firstChild);
+    }
+
+    function span(cls, text) {
+      const e = document.createElement('span');
+      if (cls) e.className = cls;
+      e.textContent = text;
+      return e;
+    }
+
+    function addLine(type, ev, text) {
+      const d = document.createElement('div');
+      d.className = 'm ' + type;
+      const r = ev.roles || {};
+      const p = ev.platform || 'tiktok';
+      if (S.wChatIcons) d.appendChild(span('pf ' + p, p === 'twitch' ? 'TW' : (p === 'youtube' ? 'YT' : 'TT')));
+      if (r.isHost) d.appendChild(span('tag host', 'HOST'));
+      if (r.isMod) d.appendChild(span('tag mod', 'MOD'));
+      if (r.isSuperFan) d.appendChild(span('tag fan', p === 'twitch' ? 'SUB' : (p === 'youtube' ? 'MEMBER' : 'SUPER FAN')));
+      d.appendChild(span('n', ev.name || 'someone'));
+      d.appendChild(span('', text));
+      list.appendChild(d);
+      trim();
+
+      const fade = Number(S.wChatFade) || 0;
+      if (fade > 0) {
+        setTimeout(() => {
+          d.classList.add('out');
+          setTimeout(() => d.remove(), 700);
+        }, fade * 1000);
+      }
+    }
+
+    function platformOn(p) {
+      if (p === 'twitch') return S.wChatTwitch !== false;
+      if (p === 'youtube') return S.wChatYoutube !== false;
+      return S.wChatTiktok !== false;
+    }
+
+    function onEvent(ev) {
+      if (!platformOn(ev.platform || 'tiktok')) return;
+      if (ev.kind === 'chat') addLine('chat', ev, ev.text || '');
+      else if (ev.kind === 'gift' && S.wChatGifts) addLine('gift', ev, 'sent ' + ev.giftName + ' x' + (ev.count || 1) + ' 🎁');
+      else if (ev.kind === 'follow' && S.wChatFollows) addLine('follow', ev, 'followed! 💚');
+      else if (ev.kind === 'join' && S.wChatJoins) addLine('join', ev, 'joined 👋');
+      else if (ev.kind === 'bits' && S.wChatGifts) addLine('money', ev, 'cheered ' + ev.amount + ' bits 💎');
+      else if (ev.kind === 'sub' && S.wChatGifts) addLine('money', ev, (ev.months > 1 ? 'resubscribed for ' + ev.months + ' months' : 'just subscribed') + ' ⭐');
+      else if (ev.kind === 'subgift' && S.wChatGifts) addLine('money', ev, (ev.count > 1 ? 'gifted ' + ev.count + ' subs' : 'gifted a sub') + ' 🎁');
+      else if (ev.kind === 'superchat' && S.wChatGifts) addLine('money', ev, 'sent a ' + ev.amount + ' Super Chat 💵' + (ev.text ? ' — ' + ev.text : ''));
+      else if (ev.kind === 'raid' && S.wChatFollows) addLine('raid', ev, 'is raiding with ' + ev.viewers + ' viewers! 🚀');
+    }
+
+    // Listen to Tater Talk (reconnects by itself if the app restarts)
+    const stream = new EventSource('/events');
+    stream.onmessage = e => {
+      let m;
+      try { m = JSON.parse(e.data); } catch (x) { return; }
+      if (m.type === 'settings') { S = Object.assign(S, m.data || {}); applySettings(); }
+      else if (m.type === 'event') onEvent(m.data || {});
+    };
+
+    applySettings();
+  </script>
+</body>
+</html>

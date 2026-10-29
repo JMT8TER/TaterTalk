@@ -1,0 +1,2640 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' file: data: https:;">
+  <title>Tater Talk</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+  <style>
+    /* =====================================================
+       THEMES (colors). Pick one in the 🎨 Look tab.
+       ===================================================== */
+    :root, body[data-theme="galactic"] {
+      --bg: #05060d; --bg2: #080a16; --panel: #0d1124; --panel2: #151a33; --input: #060812;
+      --border: #1f2a52; --text: #e9ecff; --muted: #7d86b3;
+      --accent: #ffe81f; --accent-text: #1a1500; --accent-glow: rgba(255,232,31,.45); --accent-soft: rgba(255,232,31,.12);
+      --glow: #4fc3ff; --glow-soft: rgba(79,195,255,.35);
+      --good: #5dff7a; --danger: #ff3b3b;
+    }
+    body[data-theme="darkside"] {
+      --bg: #070203; --bg2: #0d0405; --panel: #160709; --panel2: #220b0e; --input: #080203;
+      --border: #4a1218; --text: #ffe6e6; --muted: #a87a7e;
+      --accent: #ff3b3b; --accent-text: #1a0000; --accent-glow: rgba(255,59,59,.5); --accent-soft: rgba(255,59,59,.12);
+      --glow: #ff2a2a; --glow-soft: rgba(255,42,42,.35);
+      --good: #5dff7a; --danger: #ff3b3b;
+    }
+    body[data-theme="rebel"] {
+      --bg: #0a0805; --bg2: #110d07; --panel: #18130b; --panel2: #231b10; --input: #080604;
+      --border: #4a3618; --text: #fff3e2; --muted: #b39a78;
+      --accent: #ff9d2e; --accent-text: #1a0d00; --accent-glow: rgba(255,157,46,.45); --accent-soft: rgba(255,157,46,.12);
+      --glow: #5dff7a; --glow-soft: rgba(93,255,122,.3);
+      --good: #5dff7a; --danger: #ff3b3b;
+    }
+    body[data-theme="hologram"] {
+      --bg: #020a12; --bg2: #04111d; --panel: #071a2b; --panel2: #0b243a; --input: #020a12;
+      --border: #145079; --text: #d8f4ff; --muted: #6fa6c4;
+      --accent: #7fdcff; --accent-text: #00121c; --accent-glow: rgba(127,220,255,.55); --accent-soft: rgba(127,220,255,.12);
+      --glow: #7fdcff; --glow-soft: rgba(127,220,255,.35);
+      --good: #7fffd4; --danger: #ff5c7a;
+    }
+    body[data-theme="classic"] {
+      --bg: #14161c; --bg2: #1c1f27; --panel: #1c1f27; --panel2: #262a35; --input: #101217;
+      --border: #2a2e39; --text: #e8e8ec; --muted: #9aa0ad;
+      --accent: #f5b942; --accent-text: #1a1a1a; --accent-glow: transparent; --accent-soft: rgba(245,185,66,.12);
+      --glow: #f5b942; --glow-soft: rgba(245,185,66,.25);
+      --good: #5fd38d; --danger: #ff6b6b;
+    }
+
+    :root { --pixel: 'Press Start 2P', 'Consolas', monospace; }
+    body.no-pixel { --pixel: "Segoe UI", sans-serif; }
+
+    /* =====================================================
+       BASICS
+       ===================================================== */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Starfield (drifts slowly) */
+    body.stars::before {
+      content: ""; position: fixed; inset: -50%; pointer-events: none; z-index: 0;
+      background-image:
+        radial-gradient(1px 1px at 20px 30px, #fff, transparent),
+        radial-gradient(1px 1px at 120px 80px, #cfe8ff, transparent),
+        radial-gradient(1.5px 1.5px at 200px 150px, #fff, transparent),
+        radial-gradient(1px 1px at 300px 40px, #ffe9a8, transparent),
+        radial-gradient(1px 1px at 380px 220px, #fff, transparent),
+        radial-gradient(2px 2px at 60px 260px, #fff, transparent),
+        radial-gradient(1px 1px at 250px 280px, #cfe8ff, transparent);
+      background-size: 420px 300px;
+      opacity: .55;
+      animation: drift 140s linear infinite;
+    }
+    @keyframes drift { from { transform: translate(0, 0); } to { transform: translate(-420px, -300px); } }
+
+    /* Old-school CRT scanlines */
+    body.scanlines::after {
+      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 50;
+      background: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0, rgba(0,0,0,0) 2px, rgba(0,0,0,.22) 3px);
+    }
+
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    h2 {
+      margin: 0 0 14px 0; font-family: var(--pixel); font-size: 11px; line-height: 1.6;
+      letter-spacing: 1px; color: var(--accent); text-shadow: 0 0 8px var(--accent-glow);
+    }
+    h3 { margin: 16px 0 8px 0; font-size: 14px; color: var(--muted); font-weight: 600; }
+    body.no-pixel h2 { font-size: 16px; letter-spacing: 0; }
+
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    input[type=text], input[type=password], input[type=number], select {
+      padding: 9px 12px;
+      font-size: 15px;
+      border-radius: 4px;
+      border: 2px solid var(--border);
+      background: var(--input);
+      color: var(--text);
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    input:focus, select:focus { border-color: var(--glow); box-shadow: 0 0 10px var(--glow-soft); }
+    select.small { padding: 5px 8px; font-size: 13px; max-width: 220px; }
+    optgroup { color: var(--accent); background: var(--panel); font-style: normal; }
+    option { color: var(--text); background: var(--panel); }
+    #username { flex: 1; min-width: 200px; }
+    #voiceSelect { flex: 1; min-width: 220px; }
+    #ttsCommand { width: 110px; padding: 6px 10px; font-size: 14px; }
+
+    button {
+      padding: 9px 16px;
+      font-size: 14px;
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 700;
+      background: var(--panel2);
+      color: var(--text);
+      box-shadow: 3px 3px 0 #000;
+      transition: transform .05s, box-shadow .05s, border-color .15s;
+    }
+    button:hover:not(:disabled) { border-color: var(--glow); box-shadow: 3px 3px 0 #000, 0 0 10px var(--glow-soft); }
+    button:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+    button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    button.danger { background: #3a0f12; border-color: #6a1a20; color: #ffd6d6; }
+    button.small { padding: 6px 12px; font-size: 13px; }
+    button:disabled { opacity: 0.45; cursor: default; }
+
+    .on { color: var(--good) !important; }
+    .err { color: var(--danger) !important; }
+    .hint { font-size: 13px; color: var(--muted); margin: 6px 0 0 0; }
+    label { font-size: 14px; color: var(--text); display: inline-flex; align-items: center; gap: 6px; }
+    input[type=checkbox] { accent-color: var(--glow); width: 16px; height: 16px; }
+    .slider { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text); }
+    .slider input { width: 110px; accent-color: var(--glow); }
+
+    /* =====================================================
+       SIDEBAR
+       ===================================================== */
+    #sidebar {
+      width: 236px; flex-shrink: 0;
+      background: var(--bg2);
+      border-right: 2px solid var(--border);
+      display: flex; flex-direction: column;
+      position: relative; z-index: 1;
+    }
+    .brand {
+      padding: 18px 14px 16px;
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 2px solid var(--border);
+    }
+    #brandTater svg { width: 60px; height: 48px; display: block; }
+    .brand .title {
+      font-family: var(--pixel); font-size: 12px; line-height: 1.6;
+      color: var(--accent); text-shadow: 0 0 8px var(--accent-glow);
+    }
+    .brand .sub { font-family: var(--pixel); font-size: 7px; color: var(--muted); letter-spacing: 1px; margin-top: 4px; }
+    body.no-pixel .brand .title { font-size: 20px; line-height: 1.2; }
+    body.no-pixel .brand .sub { font-size: 11px; }
+
+    nav { display: flex; flex-direction: column; padding: 14px 12px; gap: 6px; }
+    nav button {
+      text-align: left;
+      background: transparent;
+      color: var(--muted);
+      border: 2px solid transparent;
+      box-shadow: none;
+      padding: 12px 12px;
+      font-family: var(--pixel); font-size: 9px; letter-spacing: .5px;
+      display: flex; align-items: center; gap: 10px;
+      position: relative;
+    }
+    nav button .ico { font-size: 17px; font-family: "Segoe UI Emoji", sans-serif; }
+    nav button:hover:not(:disabled) { color: var(--text); background: var(--panel); box-shadow: none; border-color: transparent; }
+    nav button:active:not(:disabled) { transform: none; box-shadow: none; }
+    nav button.active { color: var(--accent); background: var(--panel); border-color: var(--border); }
+    nav button.active::before {
+      content: ""; position: absolute; left: -12px; top: 6px; bottom: 6px; width: 4px; border-radius: 2px;
+      background: var(--glow); box-shadow: 0 0 8px var(--glow), 0 0 16px var(--glow);
+    }
+    body.no-pixel nav button { font-size: 15px; letter-spacing: 0; }
+
+    .side-status { margin-top: auto; padding: 14px 16px; border-top: 2px solid var(--border); }
+    .livebox {
+      display: flex; align-items: center; gap: 8px;
+      font-family: var(--pixel); font-size: 9px; color: var(--muted);
+      white-space: nowrap; overflow: hidden;
+    }
+    #liveText { overflow: hidden; text-overflow: ellipsis; }
+    body.no-pixel .livebox { font-size: 13px; font-weight: 700; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+    body.live .dot { background: var(--good); box-shadow: 0 0 6px var(--good), 0 0 12px var(--good); animation: pulse 1.4s ease-in-out infinite; }
+    body.live .livebox { color: var(--good); }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+    .stats { display: flex; gap: 14px; margin-top: 12px; font-size: 14px; color: var(--muted); }
+    .stats b { color: var(--text); }
+    .version { margin-top: 12px; font-family: var(--pixel); font-size: 7px; color: var(--muted); opacity: .7; }
+    body.no-pixel .version { font-size: 11px; }
+
+    /* =====================================================
+       MAIN AREA
+       ===================================================== */
+    #content { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; z-index: 1; }
+    header {
+      padding: 14px 20px 10px;
+      background: var(--bg2);
+      border-bottom: 2px solid var(--border);
+    }
+    #connGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .conn {
+      background: var(--panel); border: 2px solid var(--border); border-radius: 6px;
+      padding: 8px 10px; display: flex; flex-direction: column; gap: 6px;
+      border-top: 3px solid var(--pc);
+    }
+    .conn.on { box-shadow: 0 0 12px var(--pc); }
+    .conn .ctop { display: flex; align-items: center; gap: 8px; font-family: var(--pixel); font-size: 9px; color: var(--pc); }
+    body.no-pixel .conn .ctop { font-size: 13px; font-weight: 800; }
+    .conn .cdot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); margin-left: auto; flex-shrink: 0; }
+    .conn.on .cdot { background: var(--good); box-shadow: 0 0 6px var(--good); }
+    .conn .crow { display: flex; gap: 6px; }
+    .conn input { flex: 1; min-width: 0; padding: 7px 9px; font-size: 14px; }
+    .conn button { padding: 6px 10px; font-size: 13px; white-space: nowrap; }
+    .conn .cmsg { font-size: 12px; color: var(--muted); min-height: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #connectAllBtn { font-family: var(--pixel); font-size: 10px; padding: 11px 16px; }
+    body.no-pixel #connectAllBtn { font-size: 15px; padding: 9px 16px; }
+    #status { font-size: 13px; color: var(--muted); font-family: Consolas, monospace; margin-left: 6px; }
+    .pf { font-size: 11px; font-weight: 800; padding: 1px 5px; border-radius: 3px; margin-right: 6px; vertical-align: middle; color: #fff; }
+    .pf.tiktok { background: #fe2c55; }
+    .pf.twitch { background: #9146ff; }
+    .pf.youtube { background: #ff0033; }
+    .msg.money { border-left-color: var(--accent); background: linear-gradient(90deg, var(--accent-soft), var(--panel) 65%); }
+    .msg.money .name { color: var(--accent); }
+    .msg.raid { border-left-color: #c77dff; background: linear-gradient(90deg, rgba(199,125,255,.15), var(--panel) 65%); }
+    .msg.raid .name { color: #d9a8ff; }
+    #status::after { content: "_"; margin-left: 2px; animation: blink 1s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    main { flex: 1; overflow: hidden; }
+    .pane { display: none; height: 100%; overflow-y: auto; padding: 16px 20px; }
+    .pane.active { display: block; }
+
+    .card {
+      background: var(--panel);
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 4px 4px 0 rgba(0,0,0,.5);
+    }
+
+    /* On/Off switch */
+    .switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; display: inline-block; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .knob {
+      position: absolute; inset: 0;
+      background: var(--panel2); border: 2px solid var(--border);
+      border-radius: 4px; cursor: pointer; transition: 0.2s;
+    }
+    .knob:before {
+      content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px;
+      background: var(--muted); border-radius: 2px; transition: 0.2s;
+    }
+    .switch input:checked + .knob { background: var(--good); border-color: var(--good); box-shadow: 0 0 10px var(--good); }
+    .switch input:checked + .knob:before { transform: translateX(20px); background: #fff; }
+    .bigLabel { font-family: var(--pixel); font-size: 10px; color: var(--accent); }
+    body.no-pixel .bigLabel { font-size: 15px; font-weight: 700; }
+
+    /* =====================================================
+       CHAT FEED
+       ===================================================== */
+    .msg {
+      padding: 8px 12px;
+      margin-bottom: 6px;
+      border-radius: 4px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--border);
+      font-size: 15px;
+      line-height: 1.45;
+      animation: slideIn .18s ease-out;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+    .msg .name { font-weight: 800; color: var(--glow); margin-right: 8px; }
+    .msg.gift { border-left-color: var(--accent); background: linear-gradient(90deg, var(--accent-soft), var(--panel) 65%); }
+    .msg.gift .name { color: var(--accent); }
+    .msg.follow { border-left-color: var(--good); }
+    .msg.follow .name { color: var(--good); }
+    .msg.join { opacity: .6; }
+    .msg.intro { border-left-color: #c77dff; background: linear-gradient(90deg, rgba(199,125,255,.15), var(--panel) 65%); }
+    .msg.intro .name { color: #d9a8ff; }
+    .msg.speaking { outline: 2px solid var(--glow); box-shadow: 0 0 14px var(--glow-soft); }
+    .tag {
+      font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 3px;
+      margin-right: 6px; vertical-align: middle; letter-spacing: .5px;
+    }
+    .tag.host { background: var(--accent); color: var(--accent-text); }
+    .tag.mod { background: #2f7de1; color: #fff; }
+    .tag.fan { background: #c94fd6; color: #fff; }
+    .tag.follower { background: #1f5a33; color: #cfe; }
+
+    #feedEmpty { text-align: center; padding-top: 70px; color: var(--muted); }
+    #emptyTater svg { width: 120px; height: 96px; animation: float 3s ease-in-out infinite; }
+    #feedEmpty .big { font-family: var(--pixel); font-size: 12px; color: var(--accent); margin: 18px 0 10px; text-shadow: 0 0 8px var(--accent-glow); }
+    body.no-pixel #feedEmpty .big { font-size: 18px; font-weight: 700; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+    /* The tater's laser sword hums */
+    .blade { filter: drop-shadow(0 0 0.4px var(--glow)) drop-shadow(0 0 1px var(--glow)); animation: hum 2.4s infinite; }
+    @keyframes hum { 0%, 100% { opacity: 1; } 48% { opacity: 1; } 50% { opacity: .7; } 53% { opacity: 1; } }
+
+    /* =====================================================
+       SOUNDS / GIFTS / INTROS / FISH
+       ===================================================== */
+    .soundCtl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; }
+    .fileName {
+      font-size: 13px; color: var(--text); max-width: 200px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .ruleRow {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 10px; margin-bottom: 8px; border-radius: 4px; background: var(--panel2);
+      border: 2px solid var(--border);
+    }
+    .ruleRow.missing { border-color: var(--danger); background: rgba(255,59,59,.08); }
+    .ruleTitle { min-width: 180px; }
+    .coins { font-size: 13px; color: var(--muted); margin-left: 6px; }
+    .giftIcon { width: 32px; height: 32px; object-fit: contain; }
+    .badge { font-size: 12px; font-weight: 700; padding: 2px 6px; border-radius: 3px; margin-left: 8px; }
+    .badge.warn { background: var(--danger); color: #1a0000; }
+    .badge.info { background: var(--border); color: var(--text); }
+    .badge.good { background: var(--good); color: #002208; }
+    #missingBanner {
+      display: none; background: rgba(255,59,59,.12); border: 2px solid var(--danger); color: #ffd6d6;
+      padding: 10px 14px; border-radius: 4px; margin-bottom: 16px; font-size: 14px;
+    }
+    #giftPicker { width: 100%; margin-top: 8px; }
+    .empty { color: var(--muted); font-size: 14px; padding: 6px 0; }
+    .fishCover { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; background: var(--input); border: 2px solid var(--border); }
+    .fishInfo { flex: 1; min-width: 200px; }
+    .fishInfo .by { font-size: 12px; color: var(--muted); }
+
+    /* =====================================================
+       LOOK TAB
+       ===================================================== */
+    .themeGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+    .themeCard {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+      text-align: left; padding: 14px; font-weight: 400;
+    }
+    .themeCard strong { font-size: 15px; }
+    .themeCard .tdesc { font-size: 12px; color: var(--muted); }
+    .themeCard.active { border-color: var(--glow); box-shadow: 3px 3px 0 #000, 0 0 16px var(--glow-soft); }
+    .themeCard.active strong::after { content: "  ✔"; color: var(--good); }
+    .swatches { display: flex; gap: 4px; }
+    .swatches span { width: 24px; height: 24px; border: 2px solid #000; border-radius: 2px; display: inline-block; }
+    .lookRow { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+    .lookRow .lname { font-weight: 700; }
+    .lookRow .ldesc { font-size: 13px; color: var(--muted); }
+  </style>
+</head>
+<body data-theme="galactic" class="stars scanlines">
+  <!-- ================= SIDEBAR ================= -->
+  <aside id="sidebar">
+    <div class="brand">
+      <div id="brandTater"></div>
+      <div>
+        <div class="title">TATER<br>TALK</div>
+        <div class="sub">LIVE COMMAND DECK</div>
+      </div>
+    </div>
+
+    <nav>
+      <button class="active" data-tab="feed"><span class="ico">💬</span>CHAT</button>
+      <button data-tab="ttsTab"><span class="ico">🔊</span>TTS</button>
+      <button data-tab="soundTab"><span class="ico">🎁</span>SOUNDS</button>
+      <button data-tab="introTab"><span class="ico">🎬</span>INTROS</button>
+      <button data-tab="widgetTab"><span class="ico">📺</span>WIDGETS</button>
+      <button data-tab="lookTab"><span class="ico">🎨</span>LOOK</button>
+    </nav>
+
+    <div class="side-status">
+      <div class="livebox"><span class="dot"></span><span id="liveText">OFFLINE</span></div>
+      <div class="stats">
+        <span title="Chat messages this session">💬 <b id="countChat">0</b></span>
+        <span title="Gifts this session">🎁 <b id="countGift">0</b></span>
+        <span title="Follows this session">💚 <b id="countFollow">0</b></span>
+      </div>
+      <div class="version">🥔 v0.1 // TATER POWERED</div>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <div id="content">
+    <header>
+      <div id="connGrid"></div>
+      <div class="row" style="margin-top:10px">
+        <button id="connectAllBtn" class="primary">CONNECT ALL</button>
+        <button id="disconnectAllBtn">Disconnect all</button>
+        <button id="stopAllBtn">🔇 Stop all</button>
+        <div id="status">Not connected.</div>
+      </div>
+    </header>
+
+    <main>
+      <!-- ===== CHAT ===== -->
+      <section id="feed" class="pane active">
+        <div id="feedEmpty">
+          <div id="emptyTater"></div>
+          <div class="big">THE TATERS ARE QUIET...</div>
+          <div>Connect to a live and chat will show up here.</div>
+        </div>
+      </section>
+
+      <!-- ===== TTS ===== -->
+      <section id="ttsTab" class="pane">
+        <div class="card">
+          <h2>🔊 TEXT-TO-SPEECH</h2>
+          <div class="row">
+            <label class="switch"><input type="checkbox" id="ttsOn"><span class="knob"></span></label>
+            <span id="ttsLabel" class="bigLabel">TTS is OFF</span>
+            <select id="voiceSelect"></select>
+            <button id="testBtn">Test voice</button>
+            <button id="skipBtn">Skip ⏭</button>
+          </div>
+          <div class="row" style="margin-top:14px">
+            <div class="slider">Volume <input type="range" id="volume" min="0" max="1" step="0.05"> <span id="volumeVal"></span></div>
+            <div class="slider">Speed <input type="range" id="rate" min="0.5" max="2" step="0.1"> <span id="rateVal"></span></div>
+            <button id="reshuffleBtn" class="small">🎲 Reshuffle viewer voices</button>
+          </div>
+          <p id="ttsMsg" class="hint"></p>
+        </div>
+
+        <div class="card">
+          <h2>📢 WHAT GETS READ</h2>
+          <div class="row">
+            <label><input type="checkbox" id="ttsCommandOn"> Only read chat that starts with:</label>
+            <input type="text" id="ttsCommand" placeholder="!tts">
+          </div>
+          <p id="ttsCommandHint" class="hint"></p>
+          <div class="row" style="margin-top:12px">
+            <label><input type="checkbox" id="readChat"> Chat messages</label>
+            <label><input type="checkbox" id="readGifts"> Gifts, subs, bits &amp; Super Chats</label>
+            <label><input type="checkbox" id="readFollows"> Follows &amp; raids</label>
+            <label><input type="checkbox" id="sayName"> Say name first</label>
+            <label id="skipCommandsLabel"><input type="checkbox" id="skipCommands"> Skip other "!" commands</label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>🛡️ WHO CAN USE TTS</h2>
+          <div class="row">
+            <label><input type="checkbox" id="ttsEveryone"> Everyone</label>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <label><input type="checkbox" id="ttsMods"> Moderators</label>
+            <label><input type="checkbox" id="ttsSuperFans"> Super Fans / Twitch subs / YouTube members</label>
+            <label><input type="checkbox" id="ttsFollowers"> TikTok followers</label>
+          </div>
+          <p class="hint">Uncheck "Everyone" to only read messages from the groups you pick. Your own messages are always read. Messages attached to bits, Super Chats, and resubs are always read (they paid for it).</p>
+          <div class="row" style="margin-top:10px">
+            <span class="hint" style="margin:0">Read chat from:</span>
+            <label><input type="checkbox" id="ttsFromTiktok"> TikTok</label>
+            <label><input type="checkbox" id="ttsFromTwitch"> Twitch</label>
+            <label><input type="checkbox" id="ttsFromYoutube"> YouTube</label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>🐟 FISH AUDIO VOICES</h2>
+          <div class="row">
+            <input type="password" id="fishKey" placeholder="Paste your Fish Audio API key" style="flex:1; min-width:240px">
+            <button id="fishKeyBtn" class="primary">Save key</button>
+            <select id="fishModel">
+              <option value="s2.1-pro-free">Free model (testing, may be slower)</option>
+              <option value="s2.1-pro">Pro model ($15 per million bytes of text)</option>
+            </select>
+          </div>
+          <p class="hint">Get a key on fish.audio in the API / developer section of your account.</p>
+
+          <h3>Search the voice library</h3>
+          <div class="row">
+            <input type="text" id="fishSearchBox" placeholder="Search voices (e.g. deep, narrator, anime)" style="flex:1; min-width:200px">
+            <select id="fishSort">
+              <option value="task_count">Most used</option>
+              <option value="score">Best match</option>
+              <option value="created_at">Newest</option>
+            </select>
+            <button id="fishSearchBtn" class="primary">Search</button>
+            <button id="fishMineBtn">My own voices</button>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <label><input type="checkbox" id="fishLicensed"> Only Fish-licensed voices (safest for monetized streams)</label>
+          </div>
+          <p id="fishMsg" class="hint"></p>
+          <div id="fishResults"></div>
+          <button id="fishMoreBtn" class="small" style="display:none">Load more</button>
+
+          <h3>Your Fish Audio voices (these show in the voice menu above, and Random picks from these)</h3>
+          <div id="fishMine"></div>
+        </div>
+
+        <div class="card">
+          <h2>👀 CHAT DISPLAY</h2>
+          <div class="row">
+            <label><input type="checkbox" id="showRoleTags"> Show MOD / SUPER FAN / FOLLOWER tags</label>
+            <label><input type="checkbox" id="showJoins"> Show when people join</label>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== SOUNDS ===== -->
+      <section id="soundTab" class="pane">
+        <div class="card">
+          <div class="row">
+            <label class="switch"><input type="checkbox" id="soundsOn"><span class="knob"></span></label>
+            <span id="soundsLabel" class="bigLabel">Sounds are ON</span>
+          </div>
+          <p class="hint">Master switch for every gift, follow, and intro sound.</p>
+        </div>
+
+        <div class="card">
+          <h2>📂 MY SOUND FOLDERS</h2>
+          <p class="hint" style="margin-top:0">Import a folder of MP3 or WAV files. It shows up as its own category in every sound menu.</p>
+          <div class="row" style="margin-top:10px">
+            <button id="importFolderBtn" class="primary">Import a folder</button>
+            <span id="folderMsg" class="hint" style="margin:0"></span>
+          </div>
+          <div id="folderList" style="margin-top:10px"></div>
+        </div>
+
+        <div class="card">
+          <h2>🎁 ANY GIFT SOUND</h2>
+          <div id="allGiftCtl"></div>
+          <p class="hint">Plays for every gift that doesn't have its own sound below.</p>
+        </div>
+
+        <div class="card">
+          <h2>💚 FOLLOW SOUND (TIKTOK)</h2>
+          <div id="followCtl"></div>
+        </div>
+
+        <div class="card">
+          <h2><span class="pf twitch">TWITCH</span>SOUNDS</h2>
+          <h3 style="margin-top:0">⭐ New sub / resub</h3><div id="twSubCtl"></div>
+          <h3>🎁 Gifted subs</h3><div id="twGiftCtl"></div>
+          <h3>💎 Bits</h3><div id="twBitsCtl"></div>
+          <h3>🚀 Raid</h3><div id="twRaidCtl"></div>
+        </div>
+
+        <div class="card">
+          <h2><span class="pf youtube">YOUTUBE</span>SOUNDS</h2>
+          <h3 style="margin-top:0">💵 Super Chat</h3><div id="ytSuperCtl"></div>
+        </div>
+
+        <div id="missingBanner"></div>
+
+        <div class="card">
+          <h2>🎁 SOUNDS FOR SPECIFIC GIFTS</h2>
+          <p id="giftInfo" class="hint" style="margin-top:0"></p>
+
+          <div class="row" style="margin-top:10px">
+            <input type="text" id="giftSearch" placeholder="Search gifts (e.g. Rose, Lion)" style="flex:1">
+            <button id="addGiftBtn" class="primary">Add gift sound</button>
+          </div>
+          <select id="giftPicker" size="10"></select>
+
+          <div class="row" style="margin-top:10px">
+            <input type="text" id="giftNameBox" placeholder="Gift not in the list? Type its exact name" style="flex:1">
+            <button id="addByNameBtn">Add by name</button>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <label>Warn me if a gift hasn't been seen for
+              <input type="number" id="staleDays" min="1" max="365" style="width:80px"> days</label>
+          </div>
+
+          <p id="giftMsg" class="hint"></p>
+          <div id="giftRules"></div>
+        </div>
+      </section>
+
+      <!-- ===== INTROS ===== -->
+      <section id="introTab" class="pane">
+        <div class="card">
+          <h2>🎬 VIEWER INTROS</h2>
+          <p class="hint" style="margin-top:0">When one of these viewers shows up, their sound plays. On TikTok it plays when they join. On Twitch and YouTube it plays the first time they chat.</p>
+          <div class="row" style="margin-top:10px">
+            <input type="text" id="introName" placeholder="Their username (e.g. longpinkytoe)" style="flex:1">
+            <button id="addIntroBtn" class="primary">Add intro</button>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <label>Don't replay the same intro for
+              <input type="number" id="introCooldown" min="0" max="1440" style="width:80px"> minutes</label>
+          </div>
+          <p id="introMsg" class="hint"></p>
+        </div>
+        <div id="introList"></div>
+      </section>
+
+      <!-- ===== WIDGETS ===== -->
+      <section id="widgetTab" class="pane">
+        <div class="card">
+          <h2>📺 ON-STREAM WIDGETS</h2>
+          <p class="hint" style="margin-top:0">Put chat and alerts on your stream. Copy a link below and add it to your streaming app. Tater Talk has to be open for widgets to work. They use your theme from the 🎨 Look tab.</p>
+          <p class="hint"><b>OBS / Streamlabs:</b> Sources → <b>+</b> → <b>Browser</b> → paste the link into URL.<br>
+          <b>TikTok LIVE Studio:</b> Sources → <b>+</b> → <b>Link</b> → paste the link.</p>
+        </div>
+
+        <div class="card">
+          <h2>💬 CHAT OVERLAY</h2>
+          <div class="row">
+            <input type="text" id="wChatUrl" readonly style="flex:1; min-width:240px" value="Starting...">
+            <button id="wChatCopy" class="primary">Copy link</button>
+            <button id="wChatOpen">Preview</button>
+          </div>
+          <p class="hint">Suggested size in OBS: width 400, height 600.</p>
+          <div class="row" style="margin-top:12px">
+            <label><input type="checkbox" id="wChatGifts"> Show gifts</label>
+            <label><input type="checkbox" id="wChatFollows"> Show follows</label>
+            <label><input type="checkbox" id="wChatJoins"> Show joins</label>
+            <label><input type="checkbox" id="wChatBg"> Message boxes (off = text only)</label>
+            <label><input type="checkbox" id="wChatIcons"> Platform icons</label>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <span class="hint" style="margin:0">Show chat from:</span>
+            <label><input type="checkbox" id="wChatTiktok"> TikTok</label>
+            <label><input type="checkbox" id="wChatTwitch"> Twitch</label>
+            <label><input type="checkbox" id="wChatYoutube"> YouTube</label>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <label>Text size <input type="number" id="wChatFontSize" min="10" max="60" style="width:70px"></label>
+            <label>Max messages <input type="number" id="wChatMax" min="1" max="50" style="width:70px"></label>
+            <label>Hide each message after <input type="number" id="wChatFade" min="0" max="600" style="width:70px"> seconds (0 = never)</label>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button id="wChatTest" class="small">💬 Send a test message</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>🎉 ALERT POPUPS</h2>
+          <div class="row">
+            <input type="text" id="wAlertUrl" readonly style="flex:1; min-width:240px" value="Starting...">
+            <button id="wAlertCopy" class="primary">Copy link</button>
+            <button id="wAlertOpen">Preview</button>
+          </div>
+          <p class="hint">Suggested size in OBS: width 800, height 400.</p>
+          <div class="row" style="margin-top:12px">
+            <label><input type="checkbox" id="wAlertGifts"> TikTok gifts</label>
+            <label><input type="checkbox" id="wAlertFollows"> TikTok follows</label>
+            <label><input type="checkbox" id="wAlertIntros"> Viewer intros</label>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <label><input type="checkbox" id="wAlertSubs"> Twitch subs &amp; gifted subs</label>
+            <label><input type="checkbox" id="wAlertBits"> Twitch bits</label>
+            <label><input type="checkbox" id="wAlertRaids"> Twitch raids</label>
+            <label><input type="checkbox" id="wAlertSuper"> YouTube Super Chats</label>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <label>Only show TikTok gifts worth at least <input type="number" id="wAlertMinCoins" min="0" max="100000" style="width:90px"> coins</label>
+            <label>Show each alert for <input type="number" id="wAlertSeconds" min="2" max="30" style="width:70px"> seconds</label>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button id="wTestGift" class="small">🎁 Test gift alert</button>
+            <button id="wTestFollow" class="small">💚 Test follow alert</button>
+            <button id="wTestIntro" class="small">🎬 Test intro alert</button>
+            <button id="wTestSub" class="small">⭐ Test Twitch sub</button>
+            <button id="wTestSuper" class="small">💵 Test Super Chat</button>
+          </div>
+          <p id="widgetMsg" class="hint"></p>
+        </div>
+      </section>
+
+      <!-- ===== LOOK ===== -->
+      <section id="lookTab" class="pane">
+        <div class="card">
+          <h2>🎨 THEME</h2>
+          <div id="themeGrid" class="themeGrid"></div>
+        </div>
+        <div class="card">
+          <h2>✨ EFFECTS</h2>
+          <div class="lookRow">
+            <label class="switch"><input type="checkbox" id="lookStars"><span class="knob"></span></label>
+            <div><div class="lname">Starfield</div><div class="ldesc">Slowly drifting stars in the background.</div></div>
+          </div>
+          <div class="lookRow">
+            <label class="switch"><input type="checkbox" id="lookScanlines"><span class="knob"></span></label>
+            <div><div class="lname">CRT scanlines</div><div class="ldesc">Old-school TV lines over everything.</div></div>
+          </div>
+          <div class="lookRow">
+            <label class="switch"><input type="checkbox" id="lookPixel"><span class="knob"></span></label>
+            <div><div class="lname">Retro pixel font</div><div class="ldesc">Arcade-style lettering for titles and menus. Turn off for easier reading.</div></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // =====================================================
+    //  The Tater mascot (pixel art, holding a laser sword)
+    // =====================================================
+    const TATER_SVG = `
+<svg viewBox="0 0 20 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
+  <rect class="blade" x="15" y="0" width="1" height="9" style="fill:var(--glow)"/>
+  <rect x="15" y="9" width="1" height="3" fill="#9aa3b5"/>
+  <rect x="15" y="10" width="1" height="1" fill="#5b6275"/>
+  <rect x="5" y="3" width="6" height="1" fill="#c8924a"/>
+  <rect x="4" y="4" width="8" height="1" fill="#c8924a"/>
+  <rect x="3" y="5" width="10" height="2" fill="#c8924a"/>
+  <rect x="2" y="7" width="11" height="1" fill="#c8924a"/>
+  <rect x="2" y="8" width="12" height="3" fill="#c8924a"/>
+  <rect x="3" y="11" width="11" height="1" fill="#c8924a"/>
+  <rect x="3" y="12" width="10" height="1" fill="#c8924a"/>
+  <rect x="4" y="13" width="8" height="1" fill="#9b6a35"/>
+  <rect x="5" y="14" width="5" height="1" fill="#9b6a35"/>
+  <rect x="13" y="8" width="1" height="4" fill="#9b6a35"/>
+  <rect x="12" y="5" width="1" height="3" fill="#9b6a35"/>
+  <rect x="14" y="10" width="1" height="1" fill="#c8924a"/>
+  <rect x="5" y="4" width="3" height="1" fill="#e9b874"/>
+  <rect x="4" y="5" width="1" height="2" fill="#e9b874"/>
+  <rect x="9" y="5" width="1" height="1" fill="#8a5a2b"/>
+  <rect x="4" y="11" width="1" height="1" fill="#8a5a2b"/>
+  <rect x="11" y="12" width="1" height="1" fill="#8a5a2b"/>
+  <rect x="6" y="7" width="1" height="2" fill="#1a0f05"/>
+  <rect x="10" y="7" width="1" height="2" fill="#1a0f05"/>
+  <rect x="5" y="9" width="1" height="1" fill="#e07a5f"/>
+  <rect x="11" y="9" width="1" height="1" fill="#e07a5f"/>
+  <rect x="6" y="10" width="1" height="1" fill="#1a0f05"/>
+  <rect x="7" y="11" width="3" height="1" fill="#1a0f05"/>
+  <rect x="10" y="10" width="1" height="1" fill="#1a0f05"/>
+</svg>`;
+    document.getElementById('brandTater').innerHTML = TATER_SVG;
+    document.getElementById('emptyTater').innerHTML = TATER_SVG;
+
+    // =====================================================
+    //  Themes
+    // =====================================================
+    const THEMES = [
+      { id: 'galactic', name: 'Galactic Tater', desc: 'Space gold + blue laser glow', sw: ['#05060d', '#ffe81f', '#4fc3ff'] },
+      { id: 'darkside', name: 'Dark Side Tater', desc: 'Red glow, maximum menace', sw: ['#070203', '#ff3b3b', '#ff2a2a'] },
+      { id: 'rebel', name: 'Rebel Tater', desc: 'Orange flight suit + green glow', sw: ['#0a0805', '#ff9d2e', '#5dff7a'] },
+      { id: 'hologram', name: 'Hologram Tater', desc: 'Blue transmission vibes', sw: ['#020a12', '#7fdcff', '#145079'] },
+      { id: 'classic', name: 'Classic Tater', desc: 'The original plain look', sw: ['#14161c', '#f5b942', '#2a2e39'] }
+    ];
+
+    // =====================================================
+    //  Built-in gift list (common TikTok gifts)
+    // =====================================================
+    const STARTER_GIFTS = [
+      ['Rose', 1], ['TikTok', 1], ['GG', 1], ['Ice Cream Cone', 1], ['Heart Me', 1],
+      ['Finger Heart', 5], ['Rosa', 10], ['Friendship Necklace', 10], ['Perfume', 20],
+      ['Doughnut', 30], ['Paper Crane', 99], ['Little Crown', 99], ['Cap', 99],
+      ['Hat and Mustache', 99], ['Hand Hearts', 100], ['Confetti', 100],
+      ['Sunglasses', 199], ['Corgi', 299], ['Boxing Gloves', 299], ['Money Gun', 500],
+      ['Swan', 699], ['Train', 899], ['Galaxy', 1000], ['Fireworks', 1088],
+      ['Chasing the Dream', 1500], ['Motorcycle', 2988], ['Private Jet', 4888],
+      ['Sports Car', 7000], ['Interstellar', 10000], ['Rosa Nebula', 15000],
+      ['Lion', 29999], ['TikTok Stars', 39999], ['Thunder Falcon', 39999],
+      ['Sands Sprout', 40000], ['Fire phoenix', 41999], ['Pegasus', 42999],
+      ['The Fair King', 42999], ["Yuki's Vigilance", 42999], ['King Leonardo', 42999],
+      ["Valerian's Oath", 43999], ['TikTok Universe', 44999]
+    ];
+
+    // =====================================================
+    //  Sound engine (makes the built-in sounds, no files needed)
+    // =====================================================
+    let audioCtx = null;
+    function getAudioCtx() {
+      if (!audioCtx) audioCtx = new AudioContext();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function tone(c, out, o) {
+      const t = c.currentTime + (o.start || 0);
+      const dur = o.dur;
+      const vol = o.vol || 0.3;
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = o.type || 'sine';
+      osc.frequency.setValueAtTime(o.freq, t);
+      if (o.freqEnd) osc.frequency.exponentialRampToValueAtTime(o.freqEnd, t + dur);
+
+      if (o.vibrato) {
+        const lfo = c.createOscillator();
+        const lfoGain = c.createGain();
+        lfo.frequency.value = o.vibrato.rate;
+        lfoGain.gain.value = o.vibrato.depth;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+        lfo.start(t);
+        lfo.stop(t + dur + 0.05);
+      }
+
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + (o.attack || 0.005));
+      if (o.hold) g.gain.setValueAtTime(vol, t + Math.max(0.01, dur - 0.08));
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+      let node = osc;
+      if (o.lowpass) {
+        const f = c.createBiquadFilter();
+        f.type = 'lowpass';
+        f.frequency.value = o.lowpass;
+        osc.connect(f);
+        node = f;
+      }
+      node.connect(g);
+      g.connect(out);
+      osc.start(t);
+      osc.stop(t + dur + 0.05);
+    }
+
+    function sweep(c, out, o) {
+      const t = c.currentTime + (o.start || 0);
+      const osc = c.createOscillator();
+      osc.type = o.type || 'sine';
+      osc.frequency.setValueCurveAtTime(new Float32Array(o.freqs), t, o.dur);
+      const g = c.createGain();
+      g.gain.value = 0;
+      g.gain.setValueCurveAtTime(new Float32Array(o.gains), t, o.dur);
+      let node = osc;
+      if (o.lowpass) {
+        const f = c.createBiquadFilter();
+        f.type = 'lowpass';
+        f.frequency.value = o.lowpass;
+        osc.connect(f);
+        node = f;
+      }
+      node.connect(g);
+      g.connect(out);
+      osc.start(t);
+      osc.stop(t + o.dur + 0.05);
+    }
+
+    function noise(c, out, o) {
+      const t = c.currentTime + (o.start || 0);
+      const dur = o.dur;
+      const vol = o.vol || 0.3;
+      const len = Math.max(1, Math.floor(c.sampleRate * dur));
+      const buffer = c.createBuffer(1, len, c.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+      const src = c.createBufferSource();
+      src.buffer = buffer;
+      const f = c.createBiquadFilter();
+      f.type = o.filter || 'lowpass';
+      f.frequency.setValueAtTime(o.filterFreq || 2000, t);
+      if (o.filterEnd) f.frequency.exponentialRampToValueAtTime(o.filterEnd, t + dur);
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + (o.attack || 0.005));
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(f);
+      f.connect(g);
+      g.connect(out);
+      src.start(t);
+      src.stop(t + dur + 0.05);
+    }
+
+    function fart(c, out, o) {
+      const dur = o.dur || 0.8;
+      const base = o.base || 90;
+      const vol = o.vol || 0.5;
+      const steps = 40;
+      const freqs = [];
+      const gains = [];
+      for (let i = 0; i < steps; i++) {
+        const p = i / (steps - 1);
+        const bend = o.squeak ? (1 + p * 1.5) : (1 - p * 0.35);
+        freqs.push(base * (1 + (Math.random() - 0.5) * 0.5) * bend);
+        const env = Math.sin(Math.PI * Math.min(1, p * 1.1));
+        gains.push(Math.max(0.0001, vol * env * (0.55 + Math.random() * 0.45)));
+      }
+      gains[0] = 0.0001;
+      gains[steps - 1] = 0.0001;
+      sweep(c, out, { type: 'sawtooth', freqs, gains, dur, lowpass: o.squeak ? 1800 : 700, start: o.start || 0 });
+      if (o.wet) noise(c, out, { filterFreq: 500, dur: dur, vol: o.wet, start: o.start || 0, attack: 0.05 });
+    }
+
+    const SOUND_CATEGORIES = [
+      '🔔 Alerts & Chimes',
+      '🎉 Hype & Celebration',
+      '🕹️ Arcade & Games',
+      '🚀 Sci-Fi & Space',
+      '💨 Funny & Adult Humor',
+      '😱 Dramatic'
+    ];
+
+    const BUILTIN_SOUNDS = [
+      { id: 'ding', cat: 0, name: 'Ding', dur: 1.3, play: (c, o) => {
+        tone(c, o, { freq: 1318, dur: 1.2, vol: 0.5 });
+        tone(c, o, { freq: 2637, dur: 0.8, vol: 0.15 });
+      }},
+      { id: 'chime', cat: 0, name: 'Chime', dur: 1.5, play: (c, o) => {
+        [1319, 1047, 784].forEach((f, i) => tone(c, o, { freq: f, start: i * 0.2, dur: 0.9, vol: 0.35 }));
+      }},
+      { id: 'doorbell', cat: 0, name: 'Doorbell', dur: 1.5, play: (c, o) => {
+        tone(c, o, { freq: 659, dur: 0.6, vol: 0.4 });
+        tone(c, o, { freq: 523, start: 0.45, dur: 1.0, vol: 0.4 });
+      }},
+      { id: 'notify', cat: 0, name: 'Notification', dur: 0.45, play: (c, o) => {
+        tone(c, o, { freq: 880, dur: 0.12, vol: 0.35 });
+        tone(c, o, { freq: 1320, start: 0.1, dur: 0.3, vol: 0.35 });
+      }},
+      { id: 'cash', cat: 0, name: 'Cash Register', dur: 1.2, play: (c, o) => {
+        noise(c, o, { filter: 'highpass', filterFreq: 3000, dur: 0.06, vol: 0.5 });
+        tone(c, o, { freq: 2093, start: 0.05, dur: 1.0, vol: 0.3 });
+        tone(c, o, { freq: 2637, start: 0.05, dur: 0.8, vol: 0.2 });
+      }},
+      { id: 'ringbell', cat: 0, name: 'Ringing Bell', dur: 0.95, play: (c, o) => {
+        for (let i = 0; i < 12; i++) {
+          tone(c, o, { type: 'triangle', freq: 1200, start: i * 0.06, dur: 0.08, vol: 0.25 });
+          tone(c, o, { freq: 2400, start: i * 0.06, dur: 0.08, vol: 0.1 });
+        }
+      }},
+      { id: 'airhorn', cat: 1, name: 'Air Horn', dur: 1.4, play: (c, o) => {
+        [[0, 0.2], [0.26, 0.2], [0.52, 0.8]].forEach(([s, d]) =>
+          [466, 470, 587].forEach(f =>
+            tone(c, o, { type: 'sawtooth', freq: f, start: s, dur: d, vol: 0.13, attack: 0.02, hold: true })));
+      }},
+      { id: 'fanfare', cat: 1, name: 'Fanfare', dur: 1.2, play: (c, o) => {
+        tone(c, o, { type: 'sawtooth', freq: 392, dur: 0.12, vol: 0.12, hold: true });
+        tone(c, o, { type: 'sawtooth', freq: 392, start: 0.15, dur: 0.12, vol: 0.12, hold: true });
+        [523, 659, 784].forEach(f =>
+          tone(c, o, { type: 'sawtooth', freq: f, start: 0.3, dur: 0.85, vol: 0.1, hold: true }));
+      }},
+      { id: 'tada', cat: 1, name: 'Ta-Da!', dur: 1.3, play: (c, o) => {
+        [523, 659].forEach(f => tone(c, o, { type: 'triangle', freq: f, dur: 0.15, vol: 0.3 }));
+        [523, 659, 784, 1047].forEach(f =>
+          tone(c, o, { type: 'triangle', freq: f, start: 0.18, dur: 1.05, vol: 0.22 }));
+      }},
+      { id: 'applause', cat: 1, name: 'Applause', dur: 2.3, play: (c, o) => {
+        for (let i = 0; i < 140; i++) {
+          noise(c, o, { filter: 'bandpass', filterFreq: 1200 + Math.random() * 1800,
+                        start: Math.random() * 2, dur: 0.03, vol: 0.25 });
+        }
+      }},
+      { id: 'crowd', cat: 1, name: 'Crowd Roar', dur: 2.1, play: (c, o) => {
+        noise(c, o, { filter: 'bandpass', filterFreq: 700, dur: 2.0, vol: 0.6, attack: 0.4 });
+        noise(c, o, { filter: 'bandpass', filterFreq: 1800, dur: 1.8, vol: 0.3, attack: 0.5 });
+      }},
+      { id: 'drumroll', cat: 1, name: 'Drumroll + Crash', dur: 2.4, play: (c, o) => {
+        for (let i = 0; i < 30; i++) {
+          noise(c, o, { filterFreq: 1200, start: i * 0.04, dur: 0.06, vol: 0.12 + i * 0.01 });
+        }
+        noise(c, o, { filter: 'highpass', filterFreq: 5000, start: 1.25, dur: 1.1, vol: 0.5 });
+        tone(c, o, { freq: 80, freqEnd: 40, start: 1.25, dur: 0.3, vol: 0.7 });
+      }},
+      { id: 'fireworks', cat: 1, name: 'Fireworks', dur: 1.9, play: (c, o) => {
+        tone(c, o, { freq: 400, freqEnd: 2000, dur: 0.7, vol: 0.15 });
+        noise(c, o, { filterFreq: 3000, filterEnd: 200, start: 0.7, dur: 0.8, vol: 0.7 });
+        for (let i = 0; i < 20; i++) {
+          noise(c, o, { filter: 'highpass', filterFreq: 4000, start: 0.9 + Math.random() * 0.8, dur: 0.02, vol: 0.2 });
+        }
+      }},
+      { id: 'coin', cat: 2, name: 'Coin', dur: 0.55, play: (c, o) => {
+        tone(c, o, { type: 'square', freq: 988, dur: 0.08, vol: 0.25 });
+        tone(c, o, { type: 'square', freq: 1319, start: 0.08, dur: 0.42, vol: 0.25 });
+      }},
+      { id: 'jump', cat: 2, name: 'Jump', dur: 0.2, play: (c, o) => {
+        tone(c, o, { type: 'square', freq: 300, freqEnd: 900, dur: 0.15, vol: 0.2 });
+      }},
+      { id: 'levelup', cat: 2, name: 'Level Up', dur: 0.65, play: (c, o) => {
+        [523, 659, 784, 1047].forEach((f, i) =>
+          tone(c, o, { type: 'square', freq: f, start: i * 0.09, dur: 0.18, vol: 0.2 }));
+      }},
+      { id: 'oneup', cat: 2, name: '1-Up', dur: 0.6, play: (c, o) => {
+        [1319, 1568, 2637, 2093, 2349, 3136].forEach((f, i) =>
+          tone(c, o, { type: 'square', freq: f, start: i * 0.08, dur: 0.08, vol: 0.15, hold: true }));
+      }},
+      { id: 'powerup', cat: 2, name: 'Power Up', dur: 0.8, play: (c, o) => {
+        tone(c, o, { type: 'square', freq: 200, freqEnd: 1600, dur: 0.7, vol: 0.15, hold: true });
+        tone(c, o, { type: 'triangle', freq: 400, freqEnd: 3200, dur: 0.7, vol: 0.1, hold: true });
+      }},
+      { id: 'victory', cat: 2, name: '8-Bit Victory', dur: 1.15, play: (c, o) => {
+        [[523, 0, 0.12], [659, 0.12, 0.12], [784, 0.24, 0.12], [659, 0.36, 0.12],
+         [784, 0.48, 0.12], [1047, 0.6, 0.5]].forEach(([f, s, d]) =>
+          tone(c, o, { type: 'square', freq: f, start: s, dur: d, vol: 0.2, hold: true }));
+      }},
+      { id: 'gameover', cat: 2, name: 'Game Over', dur: 1.35, play: (c, o) => {
+        [[784, 0, 0.2], [659, 0.22, 0.2], [523, 0.44, 0.2], [392, 0.66, 0.65]].forEach(([f, s, d]) =>
+          tone(c, o, { type: 'square', freq: f, start: s, dur: d, vol: 0.18, hold: true }));
+      }},
+      { id: 'explode8', cat: 2, name: '8-Bit Explosion', dur: 0.65, play: (c, o) => {
+        noise(c, o, { filterFreq: 2000, filterEnd: 100, dur: 0.6, vol: 0.6 });
+      }},
+      { id: 'swordon', cat: 3, name: 'Laser Sword On', dur: 1.5, play: (c, o) => {
+        sweep(c, o, { type: 'sawtooth', freqs: [50, 140, 95, 100, 98, 100],
+                      gains: [0.0001, 0.35, 0.3, 0.28, 0.25, 0.0001], dur: 1.4, lowpass: 900 });
+        sweep(c, o, { type: 'square', freqs: [51, 142, 96, 101, 99, 101],
+                      gains: [0.0001, 0.15, 0.13, 0.12, 0.1, 0.0001], dur: 1.4, lowpass: 600 });
+      }},
+      { id: 'swordswing', cat: 3, name: 'Laser Sword Swing', dur: 0.65, play: (c, o) => {
+        sweep(c, o, { type: 'sawtooth', freqs: [95, 180, 240, 120, 95],
+                      gains: [0.0001, 0.2, 0.45, 0.2, 0.0001], dur: 0.6, lowpass: 1400 });
+      }},
+      { id: 'blaster', cat: 3, name: 'Blaster', dur: 0.3, play: (c, o) => {
+        tone(c, o, { type: 'square', freq: 2200, freqEnd: 160, dur: 0.22, vol: 0.2 });
+        noise(c, o, { filter: 'highpass', filterFreq: 2000, dur: 0.1, vol: 0.3 });
+      }},
+      { id: 'laser', cat: 3, name: 'Laser Zap', dur: 0.45, play: (c, o) => {
+        tone(c, o, { type: 'square', freq: 1500, freqEnd: 120, dur: 0.35, vol: 0.2 });
+      }},
+      { id: 'droid', cat: 3, name: 'Robot Beeps', dur: 1.1, play: (c, o) => {
+        for (let i = 0; i < 12; i++) {
+          const f = 800 + Math.random() * 1800;
+          const slide = Math.random() < 0.4 ? f * (Math.random() < 0.5 ? 1.6 : 0.6) : undefined;
+          tone(c, o, { freq: f, freqEnd: slide, start: i * 0.085, dur: 0.07, vol: 0.25 });
+        }
+      }},
+      { id: 'hyperspace', cat: 3, name: 'Hyperspace Jump', dur: 1.5, play: (c, o) => {
+        noise(c, o, { filter: 'bandpass', filterFreq: 200, filterEnd: 6000, dur: 1.4, vol: 0.5, attack: 0.9 });
+        tone(c, o, { freq: 100, freqEnd: 2400, dur: 1.4, vol: 0.15, attack: 0.8 });
+      }},
+      { id: 'scidoor', cat: 3, name: 'Sci-Fi Door', dur: 0.5, play: (c, o) => {
+        noise(c, o, { filter: 'bandpass', filterFreq: 1500, filterEnd: 300, dur: 0.45, vol: 0.5, attack: 0.02 });
+        tone(c, o, { type: 'square', freq: 180, freqEnd: 90, dur: 0.3, vol: 0.08 });
+      }},
+      { id: 'teleport', cat: 3, name: 'Teleport', dur: 0.9, play: (c, o) => {
+        tone(c, o, { freq: 300, freqEnd: 3000, dur: 0.8, vol: 0.25, vibrato: { rate: 18, depth: 120 } });
+      }},
+      { id: 'redalert', cat: 3, name: 'Red Alert', dur: 1.2, play: (c, o) => {
+        [0, 0.6].forEach(s =>
+          tone(c, o, { type: 'sawtooth', freq: 350, freqEnd: 900, start: s, dur: 0.5, vol: 0.15, hold: true, lowpass: 2000 }));
+      }},
+      { id: 'fartshort', cat: 4, name: 'Fart (Short)', dur: 0.4, play: (c, o) => {
+        fart(c, o, { dur: 0.35, base: 110, vol: 0.5, wet: 0.1 });
+      }},
+      { id: 'fartlong', cat: 4, name: 'Fart (Long)', dur: 1.45, play: (c, o) => {
+        fart(c, o, { dur: 1.4, base: 85, vol: 0.55, wet: 0.12 });
+      }},
+      { id: 'fartsqueak', cat: 4, name: 'Fart (Squeaky)', dur: 0.75, play: (c, o) => {
+        fart(c, o, { dur: 0.7, base: 220, vol: 0.35, wet: 0.05, squeak: true });
+      }},
+      { id: 'fartwet', cat: 4, name: 'Fart (Wet)', dur: 0.85, play: (c, o) => {
+        fart(c, o, { dur: 0.8, base: 75, vol: 0.5, wet: 0.45 });
+      }},
+      { id: 'fartmg', cat: 4, name: 'Fart (Machine Gun)', dur: 1.05, play: (c, o) => {
+        for (let i = 0; i < 6; i++) {
+          fart(c, o, { start: i * 0.16, dur: 0.13, base: 95 + Math.random() * 30, vol: 0.45, wet: 0.1 });
+        }
+      }},
+      { id: 'burp', cat: 4, name: 'Burp', dur: 0.75, play: (c, o) => {
+        sweep(c, o, { type: 'sawtooth', freqs: [95, 110, 90, 105, 80, 70],
+                      gains: [0.0001, 0.5, 0.45, 0.5, 0.35, 0.0001], dur: 0.7, lowpass: 500 });
+        noise(c, o, { filterFreq: 400, dur: 0.7, vol: 0.08 });
+      }},
+      { id: 'slide', cat: 4, name: 'Slide Whistle', dur: 1.05, play: (c, o) => {
+        tone(c, o, { freq: 500, freqEnd: 1800, dur: 0.5, vol: 0.3, hold: true, vibrato: { rate: 6, depth: 15 } });
+        tone(c, o, { freq: 1800, freqEnd: 500, start: 0.5, dur: 0.5, vol: 0.3, hold: true, vibrato: { rate: 6, depth: 15 } });
+      }},
+      { id: 'sadtrombone', cat: 4, name: 'Sad Trombone', dur: 2.2, play: (c, o) => {
+        [[294, 0, 0.35], [277, 0.38, 0.35], [262, 0.76, 0.35]].forEach(([f, s, d]) =>
+          tone(c, o, { type: 'sawtooth', freq: f, start: s, dur: d, vol: 0.25, hold: true, lowpass: 900, attack: 0.03 }));
+        tone(c, o, { type: 'sawtooth', freq: 247, start: 1.14, dur: 1.0, vol: 0.25, hold: true, lowpass: 900,
+                     attack: 0.03, vibrato: { rate: 5, depth: 6 } });
+      }},
+      { id: 'rimshot', cat: 4, name: 'Ba Dum Tss', dur: 1.0, play: (c, o) => {
+        noise(c, o, { filter: 'bandpass', filterFreq: 1800, dur: 0.05, vol: 0.3 });
+        tone(c, o, { freq: 180, freqEnd: 120, dur: 0.15, vol: 0.6 });
+        tone(c, o, { freq: 140, freqEnd: 90, start: 0.17, dur: 0.2, vol: 0.6 });
+        noise(c, o, { filter: 'highpass', filterFreq: 6000, start: 0.38, dur: 0.6, vol: 0.35 });
+      }},
+      { id: 'clownhorn', cat: 4, name: 'Clown Horn', dur: 0.6, play: (c, o) => {
+        [0, 0.32].forEach(s => {
+          tone(c, o, { type: 'square', freq: 330, start: s, dur: 0.22, vol: 0.2, hold: true, lowpass: 1500 });
+          tone(c, o, { type: 'square', freq: 395, start: s, dur: 0.22, vol: 0.15, hold: true, lowpass: 1500 });
+        });
+      }},
+      { id: 'boing', cat: 4, name: 'Boing', dur: 0.65, play: (c, o) => {
+        tone(c, o, { type: 'triangle', freq: 120, freqEnd: 600, dur: 0.25, vol: 0.4 });
+        tone(c, o, { type: 'triangle', freq: 600, freqEnd: 250, start: 0.25, dur: 0.35, vol: 0.3 });
+      }},
+      { id: 'pop', cat: 4, name: 'Pop', dur: 0.2, play: (c, o) => {
+        tone(c, o, { freq: 800, freqEnd: 150, dur: 0.1, vol: 0.6 });
+      }},
+      { id: 'bubbles', cat: 4, name: 'Bubbles', dur: 0.6, play: (c, o) => {
+        [0, 0.15, 0.3].forEach(s => tone(c, o, { freq: 300, freqEnd: 1200, start: s, dur: 0.12, vol: 0.3 }));
+      }},
+      { id: 'buzzer', cat: 4, name: 'Wrong Buzzer', dur: 0.8, play: (c, o) => {
+        tone(c, o, { type: 'sawtooth', freq: 110, dur: 0.7, vol: 0.2, hold: true });
+        tone(c, o, { type: 'sawtooth', freq: 116, dur: 0.7, vol: 0.2, hold: true });
+      }},
+      { id: 'crickets', cat: 4, name: 'Awkward Crickets', dur: 2.1, play: (c, o) => {
+        for (let i = 0; i < 6; i++) {
+          for (let j = 0; j < 3; j++) {
+            tone(c, o, { freq: 4500, start: i * 0.33 + j * 0.05, dur: 0.04, vol: 0.12 });
+          }
+        }
+      }},
+      { id: 'dundun', cat: 5, name: 'Dun Dun Dunnn', dur: 2.6, play: (c, o) => {
+        [[[147, 175, 220], 0, 0.35], [[139, 165, 208], 0.45, 0.35]].forEach(([fs, s, d]) =>
+          fs.forEach(f => tone(c, o, { type: 'sawtooth', freq: f, start: s, dur: d, vol: 0.12, hold: true, lowpass: 800 })));
+        [131, 156, 196].forEach(f =>
+          tone(c, o, { type: 'sawtooth', freq: f, start: 0.9, dur: 1.6, vol: 0.12, hold: true, lowpass: 800,
+                       vibrato: { rate: 5, depth: 3 } }));
+      }},
+      { id: 'suspense', cat: 5, name: 'Suspense', dur: 2.1, play: (c, o) => {
+        const gains = [];
+        for (let i = 0; i < 40; i++) {
+          const fade = Math.min(1, i / 6, (39 - i) / 6);
+          gains.push(Math.max(0.0001, (i % 2 ? 0.05 : 0.25) * fade));
+        }
+        sweep(c, o, { type: 'sawtooth', freqs: [110, 110], gains, dur: 2.0, lowpass: 600 });
+        sweep(c, o, { type: 'sawtooth', freqs: [116.5, 116.5], gains, dur: 2.0, lowpass: 600 });
+      }},
+      { id: 'heartbeat', cat: 5, name: 'Heartbeat', dur: 0.6, play: (c, o) => {
+        tone(c, o, { freq: 70, freqEnd: 40, dur: 0.15, vol: 0.9 });
+        tone(c, o, { freq: 70, freqEnd: 40, start: 0.22, dur: 0.15, vol: 0.7 });
+      }},
+      { id: 'whoosh', cat: 5, name: 'Whoosh', dur: 0.8, play: (c, o) => {
+        noise(c, o, { filter: 'bandpass', filterFreq: 300, filterEnd: 4000, dur: 0.7, vol: 0.6, attack: 0.25 });
+      }},
+      { id: 'siren', cat: 5, name: 'Siren', dur: 1.7, play: (c, o) => {
+        sweep(c, o, { freqs: [600, 1200, 600, 1200, 600], gains: [0.0001, 0.3, 0.3, 0.3, 0.0001], dur: 1.6 });
+      }},
+      { id: 'boom', cat: 5, name: 'Boom', dur: 2.0, play: (c, o) => {
+        noise(c, o, { filterFreq: 600, filterEnd: 60, dur: 1.8, vol: 0.8 });
+        tone(c, o, { freq: 60, freqEnd: 30, dur: 1.2, vol: 0.8 });
+      }},
+      { id: 'thunder', cat: 5, name: 'Thunder', dur: 2.6, play: (c, o) => {
+        noise(c, o, { filterFreq: 800, filterEnd: 80, dur: 2.5, vol: 0.7, attack: 0.05 });
+        noise(c, o, { filterFreq: 300, start: 0.3, dur: 2.0, vol: 0.5, attack: 0.2 });
+      }}
+    ];
+
+    function playBuiltin(id, volume) {
+      const s = BUILTIN_SOUNDS.find(x => x.id === id);
+      if (!s) return null;
+      const c = getAudioCtx();
+      const out = c.createGain();
+      out.gain.value = Math.min(1, Math.max(0, Number(volume) || 0));
+      out.connect(c.destination);
+      try { s.play(c, out); } catch (e) { console.log('Sound error:', e); }
+      return { out: out, dur: s.dur };
+    }
+
+    // =====================================================
+    //  Helpers
+    // =====================================================
+    const $ = id => document.getElementById(id);
+    const DAY = 24 * 60 * 60 * 1000;
+
+    function el(tag, props, children) {
+      const e = document.createElement(tag);
+      if (props) Object.assign(e, props);
+      (children || []).forEach(c => {
+        if (c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+      });
+      return e;
+    }
+
+    function makeSwitch(checked, onChange) {
+      const input = el('input', { type: 'checkbox', checked: !!checked });
+      const label = el('label', { className: 'switch' }, [input, el('span', { className: 'knob' })]);
+      input.addEventListener('change', () => onChange(input.checked));
+      label.input = input;
+      return label;
+    }
+
+    function sameName(a, b) {
+      return String(a || '').toLowerCase() === String(b || '').toLowerCase();
+    }
+
+    function setMsg(id, text, isError) {
+      $(id).className = 'hint' + (isError ? ' err' : '');
+      $(id).textContent = text || '';
+    }
+
+    // =====================================================
+    //  Settings (remembered between sessions)
+    // =====================================================
+    const SOUND_KEYS = ['allGift', 'followSound', 'twSub', 'twGift', 'twBits', 'twRaid', 'ytSuper'];
+    const defaults = {
+      lastUsername: '', twitchChannel: 'darth_t8ter', youtubeChannel: '',
+      ttsFromTiktok: true, ttsFromTwitch: true, ttsFromYoutube: true,
+      twSub: { on: false, url: '', fileName: '', volume: 0.8 },
+      twGift: { on: false, url: '', fileName: '', volume: 0.8 },
+      twBits: { on: false, url: '', fileName: '', volume: 0.8 },
+      twRaid: { on: false, url: '', fileName: '', volume: 0.8 },
+      ytSuper: { on: false, url: '', fileName: '', volume: 0.8 },
+      wChatIcons: true, wChatTiktok: true, wChatTwitch: true, wChatYoutube: true,
+      wAlertSubs: true, wAlertBits: true, wAlertRaids: true, wAlertSuper: true,
+      theme: 'galactic', lookStars: true, lookScanlines: true, lookPixel: true,
+      ttsOn: false, ttsVoice: '', volume: 1, rate: 1,
+      ttsCommandOn: true, ttsCommand: '!tts',
+      readChat: true, readGifts: true, readFollows: false, sayName: true, skipCommands: true,
+      ttsEveryone: true, ttsMods: true, ttsSuperFans: true, ttsFollowers: false,
+      showRoleTags: true, showJoins: false,
+      fishKey: '', fishModel: 's2.1-pro-free', fishVoices: [],
+      viewerVoices: {},
+      soundsOn: true,
+      myFolders: [],
+      allGift: { on: false, url: '', fileName: '', volume: 0.8 },
+      followSound: { on: false, url: '', fileName: '', volume: 0.8 },
+      giftRules: [],
+      staleDays: 60,
+      intros: [],
+      introCooldown: 30,
+      wChatGifts: true, wChatFollows: true, wChatJoins: false, wChatBg: true,
+      wChatFontSize: 20, wChatMax: 12, wChatFade: 0,
+      wAlertGifts: true, wAlertFollows: true, wAlertIntros: true,
+      wAlertMinCoins: 1, wAlertSeconds: 5
+    };
+
+    // Widget settings that get sent to the on-stream widgets
+    const W_CHECKS = ['wChatGifts', 'wChatFollows', 'wChatJoins', 'wChatBg', 'wChatIcons',
+                      'wChatTiktok', 'wChatTwitch', 'wChatYoutube',
+                      'wAlertGifts', 'wAlertFollows', 'wAlertIntros',
+                      'wAlertSubs', 'wAlertBits', 'wAlertRaids', 'wAlertSuper'];
+    const W_NUMS = {
+      wChatFontSize: [10, 60], wChatMax: [1, 50], wChatFade: [0, 600],
+      wAlertMinCoins: [0, 100000], wAlertSeconds: [2, 30]
+    };
+
+    function pushWidgetSettings() {
+      if (!window.tater || !window.tater.widgetSettings) return;
+      const s = { theme: settings.theme, pixel: !!settings.lookPixel };
+      W_CHECKS.forEach(k => { s[k] = !!settings[k]; });
+      Object.keys(W_NUMS).forEach(k => { s[k] = Number(settings[k]); });
+      window.tater.widgetSettings(s);
+    }
+
+    function pushWidget(kind, data) {
+      if (!window.tater || !window.tater.widgetPush) return;
+      window.tater.widgetPush(Object.assign({ kind: kind }, data));
+    }
+
+    let settings = JSON.parse(JSON.stringify(defaults));
+    try {
+      const saved = JSON.parse(localStorage.getItem('taterSettings') || '{}');
+      settings = { ...settings, ...saved };
+      SOUND_KEYS.forEach(k => { settings[k] = { ...defaults[k], ...(saved[k] || {}) }; });
+      if (!Array.isArray(settings.giftRules)) settings.giftRules = [];
+      if (!Array.isArray(settings.intros)) settings.intros = [];
+      if (!Array.isArray(settings.myFolders)) settings.myFolders = [];
+      if (!Array.isArray(settings.fishVoices)) settings.fishVoices = [];
+      if (!settings.viewerVoices || typeof settings.viewerVoices !== 'object') settings.viewerVoices = {};
+      if (!settings.ttsVoice && saved.voiceName) settings.ttsVoice = 'win:' + saved.voiceName;
+      if (typeof settings.ttsCommand !== 'string' || !settings.ttsCommand.trim()) settings.ttsCommand = '!tts';
+      if (!THEMES.some(t => t.id === settings.theme)) settings.theme = 'galactic';
+    } catch (e) {}
+
+    function saveSettings() {
+      try { localStorage.setItem('taterSettings', JSON.stringify(settings)); } catch (e) {}
+    }
+
+    // =====================================================
+    //  Look (theme + effects)
+    // =====================================================
+    function renderThemes() {
+      const grid = $('themeGrid');
+      grid.innerHTML = '';
+      THEMES.forEach(t => {
+        const card = el('button', { className: 'themeCard' + (settings.theme === t.id ? ' active' : '') });
+        const sw = el('div', { className: 'swatches' });
+        t.sw.forEach(color => {
+          const chip = el('span');
+          chip.style.background = color;
+          sw.appendChild(chip);
+        });
+        card.appendChild(sw);
+        card.appendChild(el('strong', { textContent: t.name }));
+        card.appendChild(el('span', { className: 'tdesc', textContent: t.desc }));
+        card.addEventListener('click', () => {
+          settings.theme = t.id;
+          saveSettings();
+          applyLook();
+        });
+        grid.appendChild(card);
+      });
+    }
+
+    function applyLook() {
+      document.body.dataset.theme = settings.theme;
+      document.body.classList.toggle('stars', !!settings.lookStars);
+      document.body.classList.toggle('scanlines', !!settings.lookScanlines);
+      document.body.classList.toggle('no-pixel', !settings.lookPixel);
+      renderThemes();
+      pushWidgetSettings();
+    }
+
+    ['lookStars', 'lookScanlines', 'lookPixel'].forEach(id => {
+      $(id).checked = !!settings[id];
+      $(id).addEventListener('change', () => {
+        settings[id] = $(id).checked;
+        saveSettings();
+        applyLook();
+      });
+    });
+    applyLook();
+
+    // =====================================================
+    //  Tabs
+    // =====================================================
+    document.querySelectorAll('nav button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        $(btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // =====================================================
+    //  Simple checkboxes, sliders, and number boxes
+    // =====================================================
+    const checkboxIds = ['ttsOn', 'ttsCommandOn', 'readChat', 'readGifts', 'readFollows', 'sayName', 'skipCommands',
+                         'ttsEveryone', 'ttsMods', 'ttsSuperFans', 'ttsFollowers',
+                         'ttsFromTiktok', 'ttsFromTwitch', 'ttsFromYoutube',
+                         'showRoleTags', 'showJoins', 'soundsOn'];
+
+    checkboxIds.forEach(id => {
+      $(id).checked = !!settings[id];
+      $(id).addEventListener('change', () => {
+        settings[id] = $(id).checked;
+        if (id === 'ttsOn' && !settings.ttsOn) stopSpeaking();
+        if (id === 'soundsOn' && !settings.soundsOn) stopSounds();
+        saveSettings();
+        updateLabels();
+      });
+    });
+
+    $('ttsCommand').value = settings.ttsCommand;
+    $('ttsCommand').addEventListener('input', () => {
+      settings.ttsCommand = $('ttsCommand').value.trim();
+      saveSettings();
+      updateLabels();
+    });
+    $('ttsCommand').addEventListener('change', () => {
+      if (!settings.ttsCommand) {
+        settings.ttsCommand = '!tts';
+        $('ttsCommand').value = '!tts';
+        saveSettings();
+        updateLabels();
+      }
+    });
+
+    $('volume').value = settings.volume;
+    $('rate').value = settings.rate;
+    ['volume', 'rate'].forEach(id => {
+      $(id).addEventListener('input', () => {
+        settings[id] = Number($(id).value);
+        saveSettings();
+        updateLabels();
+      });
+    });
+
+    $('introCooldown').value = settings.introCooldown;
+    $('introCooldown').addEventListener('change', () => {
+      settings.introCooldown = Math.max(0, Number($('introCooldown').value) || 0);
+      $('introCooldown').value = settings.introCooldown;
+      saveSettings();
+    });
+
+    $('staleDays').value = settings.staleDays;
+    $('staleDays').addEventListener('change', () => {
+      settings.staleDays = Math.max(1, Number($('staleDays').value) || 60);
+      $('staleDays').value = settings.staleDays;
+      saveSettings();
+      renderGiftRules();
+    });
+
+    function updateLabels() {
+      $('ttsLabel').textContent = settings.ttsOn ? 'TTS ON' : 'TTS OFF';
+      $('soundsLabel').textContent = settings.soundsOn ? 'SOUNDS ON' : 'SOUNDS OFF';
+      $('volumeVal').textContent = Math.round(settings.volume * 100) + '%';
+      $('rateVal').textContent = Number(settings.rate).toFixed(1) + 'x';
+      ['ttsMods', 'ttsSuperFans', 'ttsFollowers'].forEach(id => {
+        $(id).disabled = settings.ttsEveryone;
+        $(id).parentElement.style.opacity = settings.ttsEveryone ? 0.5 : 1;
+      });
+      $('reshuffleBtn').style.display = settings.ttsVoice === 'random:viewer' ? 'inline-block' : 'none';
+
+      const cmd = settings.ttsCommand || '!tts';
+      $('ttsCommand').disabled = !settings.ttsCommandOn;
+      $('ttsCommand').style.opacity = settings.ttsCommandOn ? 1 : 0.5;
+      $('ttsCommandHint').textContent = settings.ttsCommandOn
+        ? 'Viewers type "' + cmd + ' hello everyone" and it reads "hello everyone". Regular chat is not read.'
+        : 'Every chat message gets read (if "Chat messages" is checked below).';
+      $('skipCommandsLabel').style.display = settings.ttsCommandOn ? 'none' : 'inline-flex';
+    }
+
+    // =====================================================
+    //  Voice menu (Windows voices + Fish Audio voices + Random)
+    // =====================================================
+    let voices = [];
+
+    function renderVoiceSelect() {
+      const select = $('voiceSelect');
+      select.innerHTML = '';
+
+      const winGroup = el('optgroup', { label: '🖥️ Windows voices' });
+      voices.forEach(v => {
+        winGroup.appendChild(el('option', { value: 'win:' + v.name, textContent: v.name + ' (' + v.lang + ')' }));
+      });
+      select.appendChild(winGroup);
+
+      if (settings.fishVoices.length) {
+        const fishGroup = el('optgroup', { label: '🐟 Fish Audio voices' });
+        fishGroup.appendChild(el('option', { value: 'random:fish', textContent: '🎲 Random Fish voice (every message)' }));
+        fishGroup.appendChild(el('option', { value: 'random:viewer', textContent: '🎲 Random Fish voice (each viewer keeps theirs)' }));
+        settings.fishVoices.forEach(f => {
+          fishGroup.appendChild(el('option', { value: 'fish:' + f.id, textContent: f.title }));
+        });
+        select.appendChild(fishGroup);
+      }
+
+      const valid = Array.from(select.options).some(o => o.value === settings.ttsVoice);
+      if (valid) {
+        select.value = settings.ttsVoice;
+      } else if (select.options.length) {
+        settings.ttsVoice = select.options[0].value;
+        select.value = settings.ttsVoice;
+      }
+      updateLabels();
+    }
+
+    function loadVoices() {
+      voices = speechSynthesis.getVoices();
+      renderVoiceSelect();
+    }
+    loadVoices();
+    speechSynthesis.onvoiceschanged = loadVoices;
+
+    $('voiceSelect').addEventListener('change', () => {
+      settings.ttsVoice = $('voiceSelect').value;
+      saveSettings();
+      updateLabels();
+      if (settings.ttsVoice === 'random:fish') {
+        setMsg('ttsMsg', '🎲 Every message will use a random voice from your Fish Audio voices.');
+      } else if (settings.ttsVoice === 'random:viewer') {
+        setMsg('ttsMsg', '🎲 Each viewer gets their own random Fish voice and keeps it.');
+      } else {
+        setMsg('ttsMsg', '');
+      }
+    });
+
+    // ---------- Random voice picking ----------
+    let lastRandomVoice = '';
+
+    function randomFishVoice() {
+      const list = settings.fishVoices;
+      if (!list.length) return '';
+      let pick = list[Math.floor(Math.random() * list.length)];
+      if (list.length > 1) {
+        while ('fish:' + pick.id === lastRandomVoice) {
+          pick = list[Math.floor(Math.random() * list.length)];
+        }
+      }
+      lastRandomVoice = 'fish:' + pick.id;
+      return lastRandomVoice;
+    }
+
+    function resolveVoice(handle) {
+      const v = settings.ttsVoice;
+      if (v === 'random:fish') return randomFishVoice();
+      if (v === 'random:viewer') {
+        const key = String(handle || '').toLowerCase();
+        if (!key) return randomFishVoice();
+        const saved = settings.viewerVoices[key];
+        if (saved && settings.fishVoices.some(f => 'fish:' + f.id === saved)) return saved;
+        const pick = randomFishVoice();
+        if (Object.keys(settings.viewerVoices).length > 3000) settings.viewerVoices = {};
+        settings.viewerVoices[key] = pick;
+        saveSettings();
+        return pick;
+      }
+      return v;
+    }
+
+    $('reshuffleBtn').addEventListener('click', () => {
+      settings.viewerVoices = {};
+      saveSettings();
+      setMsg('ttsMsg', '🎲 Shuffled! Every viewer will get a new random voice next time they chat.');
+    });
+
+    // =====================================================
+    //  TTS queue (one message at a time)
+    // =====================================================
+    const ttsQueue = [];
+    let speaking = false;
+    let ttsToken = 0;
+    let currentTTSAudio = null;
+    let currentDone = null;
+    let lastFishError = '';
+
+    function cleanText(text) {
+      return String(text || '')
+        .replace(/https?:\/\/\S+/gi, 'link')
+        .replace(/(.)\1{4,}/g, '$1$1$1')
+        .trim()
+        .slice(0, 200);
+    }
+
+    function canUseTTS(roles) {
+      if (settings.ttsEveryone) return true;
+      roles = roles || {};
+      if (roles.isHost) return true;
+      if (settings.ttsMods && roles.isMod) return true;
+      if (settings.ttsSuperFans && roles.isSuperFan) return true;
+      if (settings.ttsFollowers && roles.isFollower) return true;
+      return false;
+    }
+
+    // Decides what (if anything) to read from a chat message.
+    function chatTextToRead(rawText) {
+      let text = String(rawText || '').trim();
+      if (settings.ttsCommandOn) {
+        const cmd = (settings.ttsCommand || '!tts').trim().toLowerCase();
+        if (!text.toLowerCase().startsWith(cmd)) return null;
+        const rest = text.slice(cmd.length);
+        if (rest && !/^\s/.test(rest)) return null;
+        text = rest.trim();
+        return text || null;
+      }
+      if (settings.skipCommands && text.startsWith('!')) return null;
+      return text || null;
+    }
+
+    function enqueue(text, lineElement, handle) {
+      if (!settings.ttsOn) return;
+      text = cleanText(text);
+      if (!text) return;
+      if (ttsQueue.length > 30) return;
+      ttsQueue.push({ text, lineElement, voiceKey: resolveVoice(handle) });
+      speakNext();
+    }
+
+    function makeUtterance(text, voiceKey) {
+      const u = new SpeechSynthesisUtterance(text);
+      const name = String(voiceKey || '').startsWith('win:') ? voiceKey.slice(4) : '';
+      const voice = voices.find(v => v.name === name) || voices[0];
+      if (voice) u.voice = voice;
+      u.volume = settings.volume;
+      u.rate = settings.rate;
+      return u;
+    }
+
+    async function playVoice(text, voiceKey, token, finish) {
+      if (String(voiceKey).startsWith('fish:')) {
+        const r = await window.tater.fishSpeak({
+          key: settings.fishKey,
+          model: settings.fishModel,
+          voiceId: voiceKey.slice(5),
+          text: text,
+          speed: settings.rate
+        });
+        if (token !== ttsToken) { finish(); return; }
+
+        if (r.ok) {
+          lastFishError = '';
+          const audio = new Audio(r.dataUrl);
+          audio.volume = Math.min(1, Math.max(0, Number(settings.volume) || 0));
+          currentTTSAudio = audio;
+          audio.onended = finish;
+          audio.onerror = finish;
+          audio.play().catch(finish);
+          return;
+        }
+
+        if (r.error !== lastFishError) {
+          lastFishError = r.error;
+          setMsg('ttsMsg', '⚠ ' + r.error + ' (Using a Windows voice for now.)', true);
+        }
+        voiceKey = '';
+      }
+
+      const u = makeUtterance(text, voiceKey);
+      u.onend = finish;
+      u.onerror = finish;
+      speechSynthesis.speak(u);
+    }
+
+    function speakNext() {
+      if (speaking || ttsQueue.length === 0) return;
+      const item = ttsQueue.shift();
+      const token = ++ttsToken;
+      speaking = true;
+      if (item.lineElement) item.lineElement.classList.add('speaking');
+
+      let finished = false;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        if (item.lineElement) item.lineElement.classList.remove('speaking');
+        if (token === ttsToken) {
+          speaking = false;
+          currentTTSAudio = null;
+          currentDone = null;
+          speakNext();
+        }
+      };
+      currentDone = finish;
+      playVoice(item.text, item.voiceKey || settings.ttsVoice, token, finish);
+    }
+
+    function skipCurrent() {
+      const d = currentDone;
+      ttsToken++;
+      if (currentTTSAudio) { currentTTSAudio.pause(); currentTTSAudio = null; }
+      speechSynthesis.cancel();
+      speaking = false;
+      currentDone = null;
+      if (d) d();
+      speakNext();
+    }
+
+    function stopSpeaking() {
+      ttsQueue.length = 0;
+      skipCurrent();
+    }
+
+    function testSpeak(text, voiceKey) {
+      skipCurrent();
+      ttsQueue.unshift({ text: text, voiceKey: voiceKey });
+      speakNext();
+    }
+
+    $('skipBtn').addEventListener('click', skipCurrent);
+    $('testBtn').addEventListener('click', () => {
+      setMsg('ttsMsg', '');
+      testSpeak('Hey, this is Tater Talk. How does this voice sound?', resolveVoice(''));
+    });
+
+    // =====================================================
+    //  Fish Audio voice browser
+    // =====================================================
+    $('fishKey').value = settings.fishKey;
+    $('fishModel').value = settings.fishModel;
+
+    $('fishKeyBtn').addEventListener('click', () => {
+      settings.fishKey = $('fishKey').value.trim();
+      saveSettings();
+      setMsg('fishMsg', settings.fishKey ? 'Key saved. Now search for voices.' : 'Key cleared.');
+    });
+
+    $('fishModel').addEventListener('change', () => {
+      settings.fishModel = $('fishModel').value;
+      saveSettings();
+    });
+
+    let fishPage = 1;
+    let fishLastSearch = null;
+    let fishSampleAudio = null;
+
+    function playFishSample(url) {
+      if (fishSampleAudio) fishSampleAudio.pause();
+      if (!url) return;
+      fishSampleAudio = new Audio(url);
+      fishSampleAudio.volume = Math.min(1, Math.max(0, Number(settings.volume) || 0));
+      fishSampleAudio.play().catch(() => setMsg('fishMsg', 'That sample could not be played.', true));
+    }
+
+    function fishCover(url) {
+      const img = el('img', { className: 'fishCover', src: url || '' });
+      img.onerror = () => { img.style.visibility = 'hidden'; };
+      if (!url) img.style.visibility = 'hidden';
+      return img;
+    }
+
+    function addFishVoice(v) {
+      if (settings.fishVoices.some(x => x.id === v.id)) {
+        setMsg('fishMsg', '"' + v.title + '" is already in your voices.');
+        return;
+      }
+      settings.fishVoices.push({ id: v.id, title: v.title, cover: v.cover, author: v.author });
+      saveSettings();
+      renderVoiceSelect();
+      renderFishMine();
+      setMsg('fishMsg', 'Added "' + v.title + '". Pick it (or 🎲 Random) from the voice menu at the top of this tab.');
+    }
+
+    function fishResultRow(v) {
+      const row = el('div', { className: 'ruleRow' });
+      row.appendChild(fishCover(v.cover));
+      const info = el('div', { className: 'fishInfo' }, [
+        el('strong', { textContent: v.title }),
+        v.licensed ? el('span', { className: 'badge good', textContent: 'Licensed' }) : null,
+        el('div', { className: 'by', textContent:
+          (v.author ? 'by ' + v.author + ' · ' : '') + v.uses.toLocaleString() + ' uses' })
+      ]);
+      row.appendChild(info);
+      if (v.sample) {
+        const sampleBtn = el('button', { className: 'small', textContent: '▶ Sample' });
+        sampleBtn.addEventListener('click', () => playFishSample(v.sample));
+        row.appendChild(sampleBtn);
+      }
+      const addBtn = el('button', { className: 'small primary', textContent: '➕ Add' });
+      addBtn.addEventListener('click', () => addFishVoice(v));
+      row.appendChild(addBtn);
+      return row;
+    }
+
+    async function fishSearch(options, append) {
+      if (!settings.fishKey) {
+        setMsg('fishMsg', 'Paste your Fish Audio API key and click Save key first.', true);
+        return;
+      }
+      fishLastSearch = options;
+      setMsg('fishMsg', 'Searching Fish Audio...');
+      const r = await window.tater.fishSearch({ key: settings.fishKey, ...options, page: fishPage });
+      if (!r.ok) {
+        setMsg('fishMsg', r.error, true);
+        return;
+      }
+      const box = $('fishResults');
+      if (!append) box.innerHTML = '';
+      if (!r.items.length && !append) {
+        box.appendChild(el('div', { className: 'empty', textContent:
+          options.self ? 'You haven\'t made any voices on Fish Audio yet.' : 'No voices found. Try a different search.' }));
+      }
+      r.items.forEach(v => box.appendChild(fishResultRow(v)));
+      $('fishMoreBtn').style.display = r.hasMore ? 'inline-block' : 'none';
+      setMsg('fishMsg', options.self
+        ? 'Your own voices:'
+        : 'Showing ' + box.querySelectorAll('.ruleRow').length + ' voices. Click ▶ Sample to listen, ➕ Add to use one.');
+    }
+
+    $('fishSearchBtn').addEventListener('click', () => {
+      fishPage = 1;
+      fishSearch({
+        title: $('fishSearchBox').value.trim(),
+        sortBy: $('fishSort').value,
+        licensed: $('fishLicensed').checked
+      }, false);
+    });
+    $('fishSearchBox').addEventListener('keydown', e => { if (e.key === 'Enter') $('fishSearchBtn').click(); });
+
+    $('fishMineBtn').addEventListener('click', () => {
+      fishPage = 1;
+      fishSearch({ self: true }, false);
+    });
+
+    $('fishMoreBtn').addEventListener('click', () => {
+      if (!fishLastSearch) return;
+      fishPage++;
+      fishSearch(fishLastSearch, true);
+    });
+
+    function renderFishMine() {
+      const box = $('fishMine');
+      box.innerHTML = '';
+      if (!settings.fishVoices.length) {
+        box.appendChild(el('div', { className: 'empty', textContent: 'None yet. Search above and click ➕ Add.' }));
+        return;
+      }
+      settings.fishVoices.forEach((v, i) => {
+        const row = el('div', { className: 'ruleRow' });
+        row.appendChild(fishCover(v.cover));
+        row.appendChild(el('div', { className: 'fishInfo' }, [
+          el('strong', { textContent: v.title }),
+          el('div', { className: 'by', textContent: v.author ? 'by ' + v.author : '' })
+        ]));
+        const testBtn = el('button', { className: 'small', textContent: '▶ Test' });
+        testBtn.addEventListener('click', () => {
+          setMsg('ttsMsg', '');
+          setMsg('fishMsg', 'Asking Fish Audio to say a test line...');
+          testSpeak('Hey, this is Tater Talk. How does this voice sound?', 'fish:' + v.id);
+        });
+        const useBtn = el('button', { className: 'small primary', textContent: 'Use this voice' });
+        useBtn.addEventListener('click', () => {
+          settings.ttsVoice = 'fish:' + v.id;
+          saveSettings();
+          renderVoiceSelect();
+          setMsg('fishMsg', 'TTS will now use "' + v.title + '".');
+        });
+        const removeBtn = el('button', { className: 'small danger', textContent: 'Remove' });
+        removeBtn.addEventListener('click', () => {
+          settings.fishVoices.splice(i, 1);
+          saveSettings();
+          renderVoiceSelect();
+          renderFishMine();
+        });
+        row.appendChild(testBtn);
+        row.appendChild(useBtn);
+        row.appendChild(removeBtn);
+        box.appendChild(row);
+      });
+    }
+    renderFishMine();
+
+    // =====================================================
+    //  Sound player (one sound at a time, in order)
+    // =====================================================
+    const soundQueue = [];
+    let soundPlaying = false;
+    let currentAudio = null;
+    let currentSynth = null;
+    let synthTimer = null;
+
+    function playSound(url, volume) {
+      if (!settings.soundsOn || !url) return;
+      if (soundQueue.length > 20) return;
+      soundQueue.push({ url, volume });
+      nextSound();
+    }
+
+    function nextSound() {
+      if (soundPlaying || soundQueue.length === 0) return;
+      const s = soundQueue.shift();
+      soundPlaying = true;
+
+      const done = () => {
+        currentAudio = null;
+        currentSynth = null;
+        soundPlaying = false;
+        nextSound();
+      };
+
+      if (String(s.url).startsWith('builtin:')) {
+        const r = playBuiltin(s.url.slice(8), s.volume);
+        if (!r) { done(); return; }
+        currentSynth = r.out;
+        synthTimer = setTimeout(done, r.dur * 1000 + 100);
+        return;
+      }
+
+      const audio = new Audio(s.url);
+      audio.volume = Math.min(1, Math.max(0, Number(s.volume) || 0));
+      currentAudio = audio;
+      audio.onended = done;
+      audio.onerror = done;
+      audio.play().catch(done);
+    }
+
+    function stopSounds() {
+      soundQueue.length = 0;
+      clearTimeout(synthTimer);
+      if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+      if (currentSynth) { try { currentSynth.disconnect(); } catch (e) {} currentSynth = null; }
+      soundPlaying = false;
+    }
+
+    function testSound(url, volume) {
+      if (!url) return;
+      if (String(url).startsWith('builtin:')) {
+        playBuiltin(url.slice(8), volume);
+        return;
+      }
+      const audio = new Audio(url);
+      audio.volume = Math.min(1, Math.max(0, Number(volume) || 0));
+      audio.play().catch(() => {});
+    }
+
+    $('stopAllBtn').addEventListener('click', () => {
+      stopSpeaking();
+      stopSounds();
+      if (fishSampleAudio) fishSampleAudio.pause();
+    });
+
+    function buildSoundMenu() {
+      const menu = el('select', { className: 'small' });
+      menu.appendChild(el('option', { value: '', textContent: '🎵 Pick a sound...' }));
+
+      SOUND_CATEGORIES.forEach((cat, i) => {
+        const group = el('optgroup', { label: cat });
+        BUILTIN_SOUNDS.filter(s => s.cat === i).forEach(s => {
+          const opt = el('option', { value: 'builtin:' + s.id, textContent: s.name });
+          opt.dataset.label = '🎵 ' + s.name;
+          group.appendChild(opt);
+        });
+        menu.appendChild(group);
+      });
+
+      settings.myFolders.forEach(folder => {
+        const group = el('optgroup', { label: '📂 ' + folder.name });
+        folder.sounds.forEach(s => {
+          const opt = el('option', { value: s.url, textContent: s.name });
+          opt.dataset.label = '📂 ' + s.name;
+          group.appendChild(opt);
+        });
+        menu.appendChild(group);
+      });
+
+      return menu;
+    }
+
+    function soundControls(obj) {
+      const wrap = el('div', { className: 'soundCtl' });
+      const sw = makeSwitch(obj.on, v => { obj.on = v; saveSettings(); });
+      const fileLabel = el('span', { className: 'fileName', textContent: obj.fileName || 'No sound chosen' });
+
+      function setSound(url, label) {
+        obj.url = url;
+        obj.fileName = label;
+        obj.on = true;
+        sw.input.checked = true;
+        fileLabel.textContent = label;
+        saveSettings();
+      }
+
+      const menu = buildSoundMenu();
+      menu.addEventListener('change', () => {
+        const opt = menu.options[menu.selectedIndex];
+        const url = menu.value;
+        menu.value = '';
+        if (!url) return;
+        setSound(url, opt.dataset.label || opt.textContent);
+        testSound(obj.url, obj.volume);
+      });
+
+      const chooseBtn = el('button', { className: 'small', textContent: '📁 One file' });
+      chooseBtn.addEventListener('click', async () => {
+        const r = await window.tater.pickSound();
+        if (!r || !r.ok) return;
+        setSound(r.url, r.name);
+      });
+
+      const testBtn = el('button', { className: 'small', textContent: '▶ Test' });
+      testBtn.addEventListener('click', () => testSound(obj.url, obj.volume));
+
+      const volVal = el('span', { textContent: Math.round(obj.volume * 100) + '%' });
+      const vol = el('input', { type: 'range', min: 0, max: 1, step: 0.05, value: obj.volume });
+      vol.addEventListener('input', () => {
+        obj.volume = Number(vol.value);
+        volVal.textContent = Math.round(obj.volume * 100) + '%';
+        saveSettings();
+      });
+
+      wrap.appendChild(sw);
+      wrap.appendChild(menu);
+      wrap.appendChild(chooseBtn);
+      wrap.appendChild(fileLabel);
+      wrap.appendChild(testBtn);
+      wrap.appendChild(el('span', { className: 'slider' }, ['Vol', vol, volVal]));
+      return wrap;
+    }
+
+    const SOUND_BOXES = {
+      allGiftCtl: 'allGift', followCtl: 'followSound',
+      twSubCtl: 'twSub', twGiftCtl: 'twGift', twBitsCtl: 'twBits', twRaidCtl: 'twRaid',
+      ytSuperCtl: 'ytSuper'
+    };
+
+    function renderTopSoundControls() {
+      Object.keys(SOUND_BOXES).forEach(boxId => {
+        $(boxId).innerHTML = '';
+        $(boxId).appendChild(soundControls(settings[SOUND_BOXES[boxId]]));
+      });
+    }
+
+    function playSetSound(key) {
+      const s = settings[key];
+      if (s && s.on && s.url) playSound(s.url, s.volume);
+    }
+
+    function rebuildAllSoundControls() {
+      renderTopSoundControls();
+      renderGiftRules();
+      renderIntros();
+    }
+
+    // =====================================================
+    //  My sound folders
+    // =====================================================
+    function renderFolders() {
+      const box = $('folderList');
+      box.innerHTML = '';
+      if (!settings.myFolders.length) {
+        box.appendChild(el('div', { className: 'empty', textContent: 'No folders imported yet.' }));
+        return;
+      }
+      settings.myFolders.forEach((folder, i) => {
+        const row = el('div', { className: 'ruleRow' });
+        row.appendChild(el('div', { className: 'ruleTitle' }, [
+          el('strong', { textContent: '📂 ' + folder.name }),
+          el('span', { className: 'coins', textContent: folder.sounds.length + ' sounds' })
+        ]));
+        const removeBtn = el('button', { className: 'small danger', textContent: 'Remove folder' });
+        removeBtn.addEventListener('click', () => {
+          settings.myFolders.splice(i, 1);
+          saveSettings();
+          renderFolders();
+          rebuildAllSoundControls();
+        });
+        row.appendChild(el('div', { style: 'flex:1' }));
+        row.appendChild(removeBtn);
+        box.appendChild(row);
+      });
+    }
+
+    $('importFolderBtn').addEventListener('click', async () => {
+      setMsg('folderMsg', 'Choose a folder...');
+      const r = await window.tater.importSoundFolder();
+      if (!r || !r.ok) {
+        setMsg('folderMsg', (r && r.error) || '', !!(r && r.error));
+        return;
+      }
+      settings.myFolders.push({ name: r.name, sounds: r.sounds });
+      saveSettings();
+      renderFolders();
+      rebuildAllSoundControls();
+      setMsg('folderMsg', 'Imported ' + r.sounds.length + ' sounds from "' + r.name + '". They\'re in every sound menu now.');
+    });
+
+    // =====================================================
+    //  Gift list (built-in gifts + any new gift seen live)
+    // =====================================================
+    let giftList = [];
+    try {
+      const cached = JSON.parse(localStorage.getItem('taterGifts') || '{}');
+      giftList = Array.isArray(cached.gifts) ? cached.gifts : [];
+    } catch (e) {}
+
+    STARTER_GIFTS.forEach(([name, coins]) => {
+      if (!giftList.some(g => sameName(g.name, name))) {
+        giftList.push({ id: 'name:' + name.toLowerCase(), name: name, coins: coins, image: '', lastSeen: Date.now() });
+      }
+    });
+    giftList.forEach(g => { if (!g.lastSeen) g.lastSeen = Date.now(); });
+
+    function sortGifts() {
+      giftList.sort((a, b) => a.coins - b.coins || a.name.localeCompare(b.name));
+    }
+    sortGifts();
+
+    let giftSaveTimer = null;
+    function saveGiftListSoon() {
+      clearTimeout(giftSaveTimer);
+      giftSaveTimer = setTimeout(() => {
+        try { localStorage.setItem('taterGifts', JSON.stringify({ gifts: giftList })); } catch (e) {}
+      }, 2000);
+    }
+    saveGiftListSoon();
+
+    function findGiftFor(rule) {
+      return giftList.find(g => (rule.giftId && g.id === rule.giftId) || sameName(g.name, rule.giftName));
+    }
+
+    function giftState(rule) {
+      const g = findGiftFor(rule);
+      if (!g) return 'unseen';
+      if (Date.now() - g.lastSeen > settings.staleDays * DAY) return 'stale';
+      return 'ok';
+    }
+
+    function renderGiftInfo() {
+      $('giftInfo').textContent = giftList.length + ' gifts in your list. ' +
+        'Any new gift someone sends on a live you\'re connected to gets added automatically.';
+    }
+
+    function renderGiftPicker() {
+      const q = $('giftSearch').value.trim().toLowerCase();
+      const sel = $('giftPicker');
+      const keep = sel.value;
+      sel.innerHTML = '';
+      giftList
+        .filter(g => !q || g.name.toLowerCase().includes(q))
+        .forEach(g => {
+          sel.appendChild(el('option', {
+            value: g.id,
+            textContent: g.name + '   —   ' + g.coins + (g.coins === 1 ? ' coin' : ' coins')
+          }));
+        });
+      if (keep) sel.value = keep;
+    }
+
+    function renderMissingBanner() {
+      const stale = settings.giftRules.filter(r => giftState(r) === 'stale');
+      const banner = $('missingBanner');
+      if (!stale.length) { banner.style.display = 'none'; return; }
+      banner.style.display = 'block';
+      banner.textContent = '⚠ ' + stale.length +
+        (stale.length === 1 ? ' of your gift sounds hasn\'t' : ' of your gift sounds haven\'t') +
+        ' been seen in ' + settings.staleDays + '+ days and may be retired by TikTok: ' +
+        stale.map(r => r.giftName).join(', ') + '.';
+    }
+
+    function renderGiftRules() {
+      const box = $('giftRules');
+      box.innerHTML = '';
+      if (!settings.giftRules.length) {
+        box.appendChild(el('div', { className: 'empty', textContent: 'No gift sounds yet. Click a gift above, then click "Add gift sound".' }));
+      }
+      settings.giftRules.forEach((rule, i) => {
+        const state = giftState(rule);
+        const g = findGiftFor(rule);
+        const row = el('div', { className: 'ruleRow' + (state === 'stale' ? ' missing' : '') });
+
+        const image = rule.image || (g && g.image);
+        if (image) {
+          const img = el('img', { src: image, className: 'giftIcon' });
+          img.onerror = () => { img.style.display = 'none'; };
+          row.appendChild(img);
+        }
+
+        const coins = (g && g.coins) || rule.coins;
+        const title = el('div', { className: 'ruleTitle' }, [
+          el('strong', { textContent: rule.giftName }),
+          el('span', { className: 'coins', textContent: coins ? coins + ' coins' : '' })
+        ]);
+        if (state === 'stale') {
+          title.appendChild(el('span', { className: 'badge warn', textContent: '⚠ Not seen in ' + settings.staleDays + '+ days, may be retired' }));
+        }
+        if (state === 'unseen') {
+          title.appendChild(el('span', { className: 'badge info', textContent: 'Not seen yet' }));
+        }
+        row.appendChild(title);
+        row.appendChild(soundControls(rule));
+
+        const removeBtn = el('button', { className: 'small danger', textContent: 'Remove' });
+        removeBtn.addEventListener('click', () => {
+          settings.giftRules.splice(i, 1);
+          saveSettings();
+          renderGiftRules();
+        });
+        row.appendChild(removeBtn);
+        box.appendChild(row);
+      });
+      renderMissingBanner();
+    }
+
+    function alreadyHasRule(name) {
+      return settings.giftRules.some(r => sameName(r.giftName, name));
+    }
+
+    function addSelectedGift() {
+      const id = $('giftPicker').value;
+      const g = giftList.find(x => x.id === id);
+      if (!g) { $('giftMsg').textContent = 'Click a gift in the list first.'; return; }
+      if (alreadyHasRule(g.name)) { $('giftMsg').textContent = g.name + ' already has a sound below.'; return; }
+      settings.giftRules.push({
+        giftId: g.id, giftName: g.name, coins: g.coins, image: g.image,
+        on: false, url: '', fileName: '', volume: 0.8
+      });
+      saveSettings();
+      renderGiftRules();
+      $('giftMsg').textContent = 'Added ' + g.name + '. Now pick a sound next to it.';
+    }
+
+    function addGiftByName() {
+      const name = $('giftNameBox').value.trim();
+      if (!name) { $('giftMsg').textContent = 'Type a gift name first.'; return; }
+      if (alreadyHasRule(name)) { $('giftMsg').textContent = name + ' already has a sound below.'; return; }
+      const known = giftList.find(g => sameName(g.name, name));
+      settings.giftRules.push({
+        giftId: known ? known.id : '',
+        giftName: known ? known.name : name,
+        coins: known ? known.coins : 0,
+        image: known ? known.image : '',
+        on: false, url: '', fileName: '', volume: 0.8
+      });
+      saveSettings();
+      renderGiftRules();
+      $('giftNameBox').value = '';
+      $('giftMsg').textContent = 'Added ' + name + '. Now pick a sound next to it.' +
+        (known ? '' : ' It will play once someone sends a gift with that exact name.');
+    }
+
+    $('addGiftBtn').addEventListener('click', addSelectedGift);
+    $('giftPicker').addEventListener('dblclick', addSelectedGift);
+    $('giftSearch').addEventListener('input', renderGiftPicker);
+    $('addByNameBtn').addEventListener('click', addGiftByName);
+    $('giftNameBox').addEventListener('keydown', e => { if (e.key === 'Enter') addGiftByName(); });
+
+    function rememberGift(ev) {
+      if (!ev.giftId || String(ev.giftName).startsWith('gift #')) return;
+
+      let g = giftList.find(x => x.id === ev.giftId) || giftList.find(x => sameName(x.name, ev.giftName));
+      const isNew = !g;
+      if (isNew) {
+        g = { id: ev.giftId, name: ev.giftName, coins: ev.coins || 0, image: ev.image || '', lastSeen: Date.now() };
+        giftList.push(g);
+      } else {
+        g.id = ev.giftId;
+        g.lastSeen = Date.now();
+        if (ev.coins) g.coins = ev.coins;
+        if (ev.image) g.image = ev.image;
+        if (ev.giftName) g.name = ev.giftName;
+      }
+      sortGifts();
+      saveGiftListSoon();
+
+      let rulesChanged = false;
+      settings.giftRules.forEach(r => {
+        if (sameName(r.giftName, g.name)) {
+          if (r.giftId !== g.id || (!r.image && g.image) || (g.coins && r.coins !== g.coins)) {
+            r.giftId = g.id;
+            r.image = r.image || g.image;
+            r.coins = g.coins || r.coins;
+            rulesChanged = true;
+          }
+        }
+      });
+      if (rulesChanged) saveSettings();
+
+      if (isNew) renderGiftInfo();
+      renderGiftPicker();
+      if (isNew || rulesChanged) renderGiftRules();
+    }
+
+    function giftSoundFor(ev) {
+      const rule = settings.giftRules.find(r =>
+        r.on && r.url && ((r.giftId && r.giftId === ev.giftId) || sameName(r.giftName, ev.giftName)));
+      if (rule) return rule;
+      if (settings.allGift.on && settings.allGift.url) return settings.allGift;
+      return null;
+    }
+
+    // =====================================================
+    //  Intros
+    // =====================================================
+    const introLastPlayed = {};
+
+    function renderIntros() {
+      const box = $('introList');
+      box.innerHTML = '';
+      if (!settings.intros.length) {
+        box.appendChild(el('div', { className: 'empty', textContent: 'No intros yet. Add a viewer above.' }));
+        return;
+      }
+      settings.intros.forEach((intro, i) => {
+        const row = el('div', { className: 'ruleRow' });
+        row.appendChild(el('div', { className: 'ruleTitle' }, [el('strong', { textContent: '@' + intro.username })]));
+        row.appendChild(soundControls(intro));
+        const removeBtn = el('button', { className: 'small danger', textContent: 'Remove' });
+        removeBtn.addEventListener('click', () => {
+          settings.intros.splice(i, 1);
+          saveSettings();
+          renderIntros();
+        });
+        row.appendChild(removeBtn);
+        box.appendChild(row);
+      });
+    }
+
+    $('addIntroBtn').addEventListener('click', () => {
+      const name = $('introName').value.trim().replace(/^@/, '');
+      if (!name) { $('introMsg').textContent = 'Type their @username first.'; return; }
+      if (settings.intros.some(x => sameName(x.username, name))) {
+        $('introMsg').textContent = '@' + name + ' already has an intro.';
+        return;
+      }
+      settings.intros.push({ username: name, on: false, url: '', fileName: '', volume: 0.8 });
+      saveSettings();
+      renderIntros();
+      $('introName').value = '';
+      $('introMsg').textContent = 'Added @' + name + '. Now pick a sound next to them.';
+    });
+
+    renderFolders();
+    renderTopSoundControls();
+    renderGiftInfo();
+    renderGiftPicker();
+    renderGiftRules();
+    renderIntros();
+    updateLabels();
+
+    // =====================================================
+    //  On-stream widgets
+    // =====================================================
+    W_CHECKS.forEach(id => {
+      $(id).checked = !!settings[id];
+      $(id).addEventListener('change', () => {
+        settings[id] = $(id).checked;
+        saveSettings();
+        pushWidgetSettings();
+      });
+    });
+
+    Object.keys(W_NUMS).forEach(id => {
+      const [min, max] = W_NUMS[id];
+      $(id).value = settings[id];
+      $(id).addEventListener('change', () => {
+        let v = Number($(id).value);
+        if (isNaN(v)) v = defaults[id];
+        v = Math.min(max, Math.max(min, v));
+        settings[id] = v;
+        $(id).value = v;
+        saveSettings();
+        pushWidgetSettings();
+      });
+    });
+
+    window.tater.widgetInfo().then(info => {
+      if (!info || !info.port) {
+        $('wChatUrl').value = 'Widgets could not start';
+        $('wAlertUrl').value = 'Widgets could not start';
+        setMsg('widgetMsg', 'The widget server could not start. Close any other copy of Tater Talk and restart it.', true);
+        return;
+      }
+      const base = 'http://127.0.0.1:' + info.port;
+      $('wChatUrl').value = base + '/widget/chat';
+      $('wAlertUrl').value = base + '/widget/alerts';
+    });
+
+    function widgetLink(id) {
+      const url = $(id).value;
+      return url.startsWith('http') ? url : '';
+    }
+
+    $('wChatCopy').addEventListener('click', async () => {
+      const url = widgetLink('wChatUrl');
+      if (!url) return;
+      await window.tater.copyText(url);
+      setMsg('widgetMsg', '✔ Chat overlay link copied. Paste it into your streaming app.');
+    });
+    $('wAlertCopy').addEventListener('click', async () => {
+      const url = widgetLink('wAlertUrl');
+      if (!url) return;
+      await window.tater.copyText(url);
+      setMsg('widgetMsg', '✔ Alert popup link copied. Paste it into your streaming app.');
+    });
+    $('wChatOpen').addEventListener('click', () => {
+      const url = widgetLink('wChatUrl');
+      if (url) window.tater.openLink(url);
+    });
+    $('wAlertOpen').addEventListener('click', () => {
+      const url = widgetLink('wAlertUrl');
+      if (url) window.tater.openLink(url);
+    });
+
+    $('wChatTest').addEventListener('click', () => {
+      pushWidget('chat', { name: 'Tater Bot', text: 'This is a test message from Tater Talk 🥔', roles: { isMod: true } });
+      setMsg('widgetMsg', 'Test message sent to the chat overlay.');
+    });
+    $('wTestGift').addEventListener('click', () => {
+      pushWidget('gift', { name: 'Test Tater', giftName: 'Rose', count: 5, coins: 1, image: '', test: true });
+      setMsg('widgetMsg', 'Test gift alert sent.');
+    });
+    $('wTestFollow').addEventListener('click', () => {
+      pushWidget('follow', { name: 'Test Tater', test: true });
+      setMsg('widgetMsg', 'Test follow alert sent.');
+    });
+    $('wTestIntro').addEventListener('click', () => {
+      pushWidget('intro', { name: 'Test Tater', test: true });
+      setMsg('widgetMsg', 'Test intro alert sent.');
+    });
+    $('wTestSub').addEventListener('click', () => {
+      pushWidget('sub', { platform: 'twitch', name: 'Test Tater', months: 6, test: true });
+      setMsg('widgetMsg', 'Test Twitch sub alert sent.');
+    });
+    $('wTestSuper').addEventListener('click', () => {
+      pushWidget('superchat', { platform: 'youtube', name: 'Test Tater', amount: '$5.00', text: 'Taters forever!', test: true });
+      setMsg('widgetMsg', 'Test Super Chat alert sent.');
+    });
+
+    pushWidgetSettings();
+
+    // =====================================================
+    //  Chat feed + live status
+    // =====================================================
+    const feed = $('feed');
+    const statusBox = $('status');
+    const counts = { chat: 0, gift: 0, follow: 0 };
+
+    const PLATFORMS = {
+      tiktok:  { name: 'TikTok',  short: 'TT', color: '#fe2c55', key: 'lastUsername',   placeholder: 'TikTok username' },
+      twitch:  { name: 'Twitch',  short: 'TW', color: '#9146ff', key: 'twitchChannel',  placeholder: 'Twitch channel name' },
+      youtube: { name: 'YouTube', short: 'YT', color: '#ff0033', key: 'youtubeChannel', placeholder: '@handle or live link' }
+    };
+    const connected = { tiktok: false, twitch: false, youtube: false };
+    const connUI = {};
+
+    function renderCounts() {
+      $('countChat').textContent = counts.chat.toLocaleString();
+      $('countGift').textContent = counts.gift.toLocaleString();
+      $('countFollow').textContent = counts.follow.toLocaleString();
+    }
+
+    function setStatus(text, kind) {
+      statusBox.textContent = text;
+      statusBox.className = kind || '';
+    }
+
+    function updateLive() {
+      const on = Object.keys(connected).filter(p => connected[p]);
+      document.body.classList.toggle('live', on.length > 0);
+      $('liveText').textContent = on.length ? 'LIVE: ' + on.map(p => PLATFORMS[p].name).join(' + ') : 'OFFLINE';
+    }
+
+    // ---------- One connection box per platform ----------
+    Object.keys(PLATFORMS).forEach(p => {
+      const info = PLATFORMS[p];
+      const box = el('div', { className: 'conn' });
+      box.style.setProperty('--pc', info.color);
+
+      const top = el('div', { className: 'ctop' }, [el('span', { textContent: info.name.toUpperCase() }), el('span', { className: 'cdot' })]);
+      const input = el('input', { type: 'text', placeholder: info.placeholder, value: settings[info.key] || '' });
+      const btn = el('button', { className: 'primary', textContent: 'Connect' });
+      const msg = el('div', { className: 'cmsg', textContent: 'Not connected' });
+
+      input.addEventListener('change', () => { settings[info.key] = input.value.trim(); saveSettings(); });
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
+      btn.addEventListener('click', () => connected[p] ? disconnectPlatform(p) : connectPlatform(p));
+
+      box.appendChild(top);
+      box.appendChild(el('div', { className: 'crow' }, [input, btn]));
+      box.appendChild(msg);
+      $('connGrid').appendChild(box);
+      connUI[p] = { box, input, btn, msg };
+    });
+
+    function setConnUI(p, state, text) {
+      const ui = connUI[p];
+      connected[p] = state === 'on';
+      ui.box.classList.toggle('on', state === 'on');
+      ui.btn.disabled = state === 'busy';
+      ui.btn.textContent = state === 'on' ? 'Disconnect' : (state === 'busy' ? '...' : 'Connect');
+      ui.btn.className = state === 'on' ? '' : 'primary';
+      ui.input.disabled = state === 'on' || state === 'busy';
+      ui.msg.textContent = text;
+      ui.msg.className = 'cmsg' + (state === 'err' ? ' err' : (state === 'on' ? ' on' : ''));
+      ui.msg.title = text;
+      updateLive();
+    }
+
+    async function connectPlatform(p) {
+      const ui = connUI[p];
+      const name = ui.input.value.trim();
+      if (!name) { setConnUI(p, 'err', 'Type a name first.'); return false; }
+      settings[PLATFORMS[p].key] = name;
+      saveSettings();
+      getAudioCtx();
+      setConnUI(p, 'busy', 'Connecting...');
+      const r = await window.tater.connect(p, name);
+      if (r.ok) {
+        setConnUI(p, 'on', 'Connected');
+        setStatus(PLATFORMS[p].name + ' connected.', 'on');
+        return true;
+      }
+      setConnUI(p, 'err', r.error || 'Could not connect');
+      setStatus(PLATFORMS[p].name + ': ' + (r.error || 'Could not connect'), 'err');
+      return false;
+    }
+
+    async function disconnectPlatform(p) {
+      await window.tater.disconnect(p);
+      setConnUI(p, 'off', 'Not connected');
+    }
+
+    $('connectAllBtn').addEventListener('click', async () => {
+      counts.chat = 0; counts.gift = 0; counts.follow = 0;
+      renderCounts();
+      firstChatters.clear();
+      const todo = Object.keys(PLATFORMS).filter(p => !connected[p] && connUI[p].input.value.trim());
+      if (!todo.length) { setStatus('Type at least one name above, or everything is already connected.'); return; }
+      setStatus('Connecting...');
+      const results = await Promise.all(todo.map(p => connectPlatform(p)));
+      const good = todo.filter((p, i) => results[i]).map(p => PLATFORMS[p].name);
+      const bad = todo.filter((p, i) => !results[i]).map(p => PLATFORMS[p].name);
+      setStatus((good.length ? 'Connected: ' + good.join(', ') + '. ' : '') + (bad.length ? 'Not connected: ' + bad.join(', ') + ' (see box above).' : ''),
+                bad.length ? 'err' : 'on');
+    });
+
+    $('disconnectAllBtn').addEventListener('click', async () => {
+      await Promise.all(Object.keys(PLATFORMS).filter(p => connected[p]).map(p => disconnectPlatform(p)));
+      stopSpeaking();
+      stopSounds();
+      setStatus('Disconnected.');
+    });
+
+    window.tater.onStatus(st => {
+      if (!PLATFORMS[st.platform]) return;
+      setConnUI(st.platform, st.state === 'on' ? 'on' : 'off', st.text || 'Not connected');
+      setStatus(st.text || '');
+    });
+
+    // ---------- Feed lines ----------
+    function addLine(type, name, text, roles, platform) {
+      const empty = $('feedEmpty');
+      if (empty) empty.remove();
+
+      const div = el('div', { className: 'msg ' + type });
+      if (platform && PLATFORMS[platform]) {
+        div.appendChild(el('span', { className: 'pf ' + platform, textContent: PLATFORMS[platform].short }));
+      }
+      if (settings.showRoleTags && roles) {
+        const fanLabel = platform === 'twitch' ? 'SUB' : (platform === 'youtube' ? 'MEMBER' : 'SUPER FAN');
+        if (roles.isHost) div.appendChild(el('span', { className: 'tag host', textContent: 'HOST' }));
+        if (roles.isMod) div.appendChild(el('span', { className: 'tag mod', textContent: 'MOD' }));
+        if (roles.isSuperFan) div.appendChild(el('span', { className: 'tag fan', textContent: fanLabel }));
+        if (roles.isFollower) div.appendChild(el('span', { className: 'tag follower', textContent: 'FOLLOWER' }));
+      }
+      div.appendChild(el('span', { className: 'name', textContent: name }));
+      div.appendChild(el('span', { textContent: text }));
+
+      const nearBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 80;
+      feed.appendChild(div);
+      while (feed.children.length > 300) feed.removeChild(feed.firstChild);
+      if (nearBottom) feed.scrollTop = feed.scrollHeight;
+      return div;
+    }
+
+    // ---------- Intros (TikTok join, or first chat on Twitch/YouTube) ----------
+    const firstChatters = new Set();
+
+    function tryIntro(name, handle, roles, platform) {
+      const h = String(handle || '').toLowerCase();
+      const intro = settings.intros.find(x => x.on && x.url && (sameName(x.username, h) || sameName(x.username, name)));
+      if (!intro) return;
+
+      const now = Date.now();
+      const key = h || String(name).toLowerCase();
+      const cooldown = (Number(settings.introCooldown) || 0) * 60000;
+      if (introLastPlayed[key] && now - introLastPlayed[key] < cooldown) return;
+      introLastPlayed[key] = now;
+
+      addLine('intro', name, 'just arrived! 🎬', roles, platform);
+      pushWidget('intro', { platform: platform, name: name, roles: roles });
+      playSound(intro.url, intro.volume);
+    }
+
+    function platformTTSAllowed(platform) {
+      if (platform === 'twitch') return settings.ttsFromTwitch;
+      if (platform === 'youtube') return settings.ttsFromYoutube;
+      return settings.ttsFromTiktok;
+    }
+
+    // Reads a paid message (bits / Super Chat / resub) if it has words in it
+    function paidText(text) {
+      const t = cleanText(text);
+      return t ? ': ' + t : '';
+    }
+
+    // =====================================================
+    //  Incoming events from all platforms
+    // =====================================================
+    window.tater.onEvent(ev => {
+      const name = ev.user.nickname;
+      const handle = ev.user.handle;
+      const p = ev.platform || 'tiktok';
+      const roles = ev.roles || {};
+
+      if (ev.type === 'chat') {
+        counts.chat++; renderCounts();
+        pushWidget('chat', { platform: p, name: name, text: ev.text, roles: roles });
+        const line = addLine('chat', name, ev.text, roles, p);
+
+        if (p !== 'tiktok') {
+          const key = p + ':' + String(handle).toLowerCase();
+          if (!firstChatters.has(key)) {
+            firstChatters.add(key);
+            tryIntro(name, handle, roles, p);
+          }
+        }
+
+        if (!settings.readChat) return;
+        if (!platformTTSAllowed(p)) return;
+        if (!canUseTTS(roles)) return;
+        const toRead = chatTextToRead(ev.text);
+        if (!toRead) return;
+        enqueue(settings.sayName ? name + ' says ' + toRead : toRead, line, p + ':' + handle);
+        return;
+      }
+
+      if (ev.type === 'gift') { // TikTok
+        counts.gift++; renderCounts();
+        rememberGift(ev);
+        pushWidget('gift', { platform: p, name: name, giftName: ev.giftName, count: ev.count, coins: ev.coins, image: ev.image, roles: roles });
+        const line = addLine('gift', name, 'sent ' + ev.giftName + ' x' + ev.count + ' 🎁', roles, p);
+        const sound = giftSoundFor(ev);
+        if (sound) playSound(sound.url, sound.volume);
+        if (settings.readGifts) {
+          const times = ev.count > 1 ? ' times ' + ev.count : '';
+          enqueue(name + ' sent ' + ev.giftName + times + '. Thank you!', line, p + ':' + handle);
+        }
+        return;
+      }
+
+      if (ev.type === 'follow') { // TikTok
+        counts.follow++; renderCounts();
+        pushWidget('follow', { platform: p, name: name, roles: roles });
+        const line = addLine('follow', name, 'followed! 💚', roles, p);
+        playSetSound('followSound');
+        if (settings.readFollows) enqueue(name + ' just followed. Welcome!', line, p + ':' + handle);
+        return;
+      }
+
+      if (ev.type === 'join') { // TikTok
+        if (settings.showJoins) addLine('join', name, 'joined 👋', roles, p);
+        pushWidget('join', { platform: p, name: name, roles: roles });
+        tryIntro(name, handle, roles, p);
+        return;
+      }
+
+      if (ev.type === 'bits') { // Twitch
+        counts.gift++; renderCounts();
+        pushWidget('bits', { platform: p, name: name, amount: ev.amount, text: ev.text, roles: roles });
+        const line = addLine('money', name, 'cheered ' + ev.amount + ' bits 💎' + (ev.text ? ' — ' + ev.text : ''), roles, p);
+        playSetSound('twBits');
+        if (settings.readGifts) enqueue(name + ' cheered ' + ev.amount + ' bits' + paidText(ev.text), line, p + ':' + handle);
+        return;
+      }
+
+      if (ev.type === 'sub') { // Twitch
+        counts.gift++; renderCounts();
+        const what = ev.months > 1 ? 'resubscribed for ' + ev.months + ' months' : 'just subscribed';
+        pushWidget('sub', { platform: p, name: name, months: ev.months, prime: ev.prime, roles: roles });
+        const line = addLine('money', name, what + (ev.prime ? ' with Prime' : '') + ' ⭐' + (ev.text ? ' — ' + ev.text : ''), roles, p);
+        playSetSound('twSub');
+        if (settings.readGifts) enqueue(name + ' ' + what + '! Thank you!' + paidText(ev.text), line, p + ':' + handle);
+        return;
+      }
+
+      if (ev.type === 'subgift') { // Twitch
+        counts.gift++; renderCounts();
+        const what = ev.count > 1 ? 'gifted ' + ev.count + ' subs' : 'gifted a sub' + (ev.recipient ? ' to ' + ev.recipient : '');
+        pushWidget('subgift', { platform: p, name: name, count: ev.count, recipient: ev.recipient, roles: roles });
+        const line = addLine('money', name, what + ' 🎁', roles, p);
+        playSetSound('twGift');
+        if (settings.readGifts) enqueue(name + ' ' + what + '! Thank you!', line, p + ':' + handle);
+        return;
+      }
+
+      if (ev.type === 'raid') { // Twitch
+        counts.follow++; renderCounts();
+        pushWidget('raid', { platform: p, name: name, viewers: ev.viewers });
+        const line = addLine('raid', name, 'is raiding with ' + ev.viewers + ' viewers! 🚀', {}, p);
+        playSetSound('twRaid');
+        if (settings.readFollows) enqueue(name + ' is raiding with ' + ev.viewers + ' viewers! Welcome raiders!', line, p + ':' + handle);
+        return;
+      }
+
+      if (ev.type === 'superchat') { // YouTube
+        counts.gift++; renderCounts();
+        pushWidget('superchat', { platform: p, name: name, amount: ev.amount, text: ev.text, roles: roles });
+        const line = addLine('money', name, 'sent a ' + ev.amount + ' Super Chat 💵' + (ev.text ? ' — ' + ev.text : ''), roles, p);
+        playSetSound('ytSuper');
+        if (settings.readGifts) enqueue(name + ' sent a ' + ev.amount + ' Super Chat' + paidText(ev.text), line, p + ':' + handle);
+        return;
+      }
+    });
+
+    updateLive();
+  </script>
+</body>
+</html>

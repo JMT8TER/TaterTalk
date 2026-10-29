@@ -1,0 +1,52 @@
+{
+  "name": "tatertalk",
+  "productName": "Tater Talk",
+  "version": "1.0.0",
+  "description": "Tater Talk - TTS, sounds, intros and on-stream alerts for TikTok, Twitch and YouTube",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "keywords": [],
+  "author": "Jedi Master T8ter",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "tiktok-live-connector": "^2.5.0",
+    "tmi.js": "^1.8.5",
+    "youtube-chat": "^2.2.0"
+  },
+  "devDependencies": {
+    "electron": "^45.1.0",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "com.jedimastert8ter.tatertalk",
+    "productName": "Tater Talk",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "**/*",
+      "!backup-*/**",
+      "!dist/**",
+      "!build/**",
+      "!test.js"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Tater Talk",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    }
+  }
+}
