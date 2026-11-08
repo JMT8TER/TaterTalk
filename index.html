@@ -475,6 +475,24 @@
         </div>
 
         <div class="card">
+          <h2>🎙️ VIEWER VOICES</h2>
+          <p class="hint" style="margin-top:0">Give a specific viewer (a mod, Super Fan, sub...) their own TTS voice. It's used for everything read about them, even when the main voice is set to Random. Tip: click a name in the 💬 Chat tab to fill it in here.</p>
+          <div class="row" style="margin-top:10px">
+            <input type="text" id="cvName" placeholder="Their username" style="flex:1; min-width:160px">
+            <select id="cvPlatform">
+              <option value="any">Any platform</option>
+              <option value="tiktok">TikTok</option>
+              <option value="twitch">Twitch</option>
+              <option value="youtube">YouTube</option>
+            </select>
+            <select id="cvVoice" style="max-width:260px"></select>
+            <button id="cvAddBtn" class="primary">Add voice</button>
+          </div>
+          <p id="cvMsg" class="hint"></p>
+          <div id="cvList"></div>
+        </div>
+
+        <div class="card">
           <h2>🐟 FISH AUDIO VOICES</h2>
           <div class="row">
             <input type="password" id="fishKey" placeholder="Paste your Fish Audio API key" style="flex:1; min-width:240px">
@@ -544,13 +562,22 @@
         </div>
 
         <div class="card">
-          <h2>💚 FOLLOW SOUND (TIKTOK)</h2>
+          <h2>💚 FOLLOW SOUND (TIKTOK + TWITCH)</h2>
           <div id="followCtl"></div>
         </div>
 
         <div class="card">
           <h2><span class="pf twitch">TWITCH</span>SOUNDS</h2>
-          <h3 style="margin-top:0">⭐ New sub / resub</h3><div id="twSubCtl"></div>
+          <div class="ruleRow" style="flex-direction:column; align-items:stretch">
+            <strong>🔑 Twitch follow alerts need a one-time login</strong>
+            <div class="row">
+              <input type="text" id="twClientId" placeholder="Twitch Client ID" style="flex:1; min-width:200px">
+              <button id="twLoginBtn" class="primary">Log in with Twitch</button>
+              <button id="twLogoutBtn" class="small">Log out</button>
+            </div>
+            <p id="twLoginMsg" class="hint" style="margin:0"></p>
+          </div>
+          <h3>⭐ New sub / resub</h3><div id="twSubCtl"></div>
           <h3>🎁 Gifted subs</h3><div id="twGiftCtl"></div>
           <h3>💎 Bits</h3><div id="twBitsCtl"></div>
           <h3>🚀 Raid</h3><div id="twRaidCtl"></div>
@@ -656,7 +683,7 @@
           <p class="hint">Suggested size in OBS: width 800, height 400.</p>
           <div class="row" style="margin-top:12px">
             <label><input type="checkbox" id="wAlertGifts"> TikTok gifts</label>
-            <label><input type="checkbox" id="wAlertFollows"> TikTok follows</label>
+            <label><input type="checkbox" id="wAlertFollows"> Follows (TikTok + Twitch)</label>
             <label><input type="checkbox" id="wAlertIntros"> Viewer intros</label>
           </div>
           <div class="row" style="margin-top:8px">
@@ -752,6 +779,9 @@
       { id: 'hologram', name: 'Hologram Tater', desc: 'Blue transmission vibes', sw: ['#020a12', '#7fdcff', '#145079'] },
       { id: 'classic', name: 'Classic Tater', desc: 'The original plain look', sw: ['#14161c', '#f5b942', '#2a2e39'] }
     ];
+
+    // Twitch app Client ID (safe to share - it's not a password)
+    const TWITCH_CLIENT_ID = '';
 
     // =====================================================
     //  Built-in gift list (common TikTok gifts)
@@ -1200,6 +1230,8 @@
       showRoleTags: true, showJoins: false,
       fishKey: '', fishModel: 's2.1-pro-free', fishVoices: [],
       viewerVoices: {},
+      customVoices: [],
+      twitchClientId: '', twitchToken: '', twitchLogin: '',
       soundsOn: true,
       myFolders: [],
       allGift: { on: false, url: '', fileName: '', volume: 0.8 },
@@ -1247,6 +1279,8 @@
       if (!Array.isArray(settings.myFolders)) settings.myFolders = [];
       if (!Array.isArray(settings.fishVoices)) settings.fishVoices = [];
       if (!settings.viewerVoices || typeof settings.viewerVoices !== 'object') settings.viewerVoices = {};
+      if (!Array.isArray(settings.customVoices)) settings.customVoices = [];
+      if (!settings.twitchClientId) settings.twitchClientId = TWITCH_CLIENT_ID;
       if (!settings.ttsVoice && saved.voiceName) settings.ttsVoice = 'win:' + saved.voiceName;
       if (typeof settings.ttsCommand !== 'string' || !settings.ttsCommand.trim()) settings.ttsCommand = '!tts';
       if (!THEMES.some(t => t.id === settings.theme)) settings.theme = 'galactic';
@@ -1416,6 +1450,7 @@
         });
         select.appendChild(fishGroup);
       }
+      if (typeof renderCustomVoices === 'function') renderCustomVoices();
 
       const valid = Array.from(select.options).some(o => o.value === settings.ttsVoice);
       if (valid) {
@@ -1463,7 +1498,31 @@
       return lastRandomVoice;
     }
 
-    function resolveVoice(handle) {
+    // Is this voice still available? (Windows voice installed, or Fish voice still in your list)
+    function voiceExists(v) {
+      v = String(v || '');
+      if (v.startsWith('win:')) return voices.some(x => 'win:' + x.name === v);
+      if (v.startsWith('fish:')) return settings.fishVoices.some(f => 'fish:' + f.id === v);
+      return false;
+    }
+
+    // Finds a viewer's custom voice, if they have one
+    function customVoiceFor(who) {
+      if (!who || typeof who !== 'object') return '';
+      const names = [who.handle, who.name].map(n => String(n || '').replace(/^@/, '').toLowerCase()).filter(Boolean);
+      const hit = settings.customVoices.find(c =>
+        (c.platform === 'any' || c.platform === who.platform) &&
+        names.includes(String(c.username).replace(/^@/, '').toLowerCase()) &&
+        voiceExists(c.voice));
+      return hit ? hit.voice : '';
+    }
+
+    // who = { platform, handle, name }  (or a plain text key for older calls)
+    function resolveVoice(who) {
+      const custom = customVoiceFor(who);
+      if (custom) return custom;
+
+      const handle = (who && typeof who === 'object') ? who.platform + ':' + who.handle : who;
       const v = settings.ttsVoice;
       if (v === 'random:fish') return randomFishVoice();
       if (v === 'random:viewer') {
@@ -1479,6 +1538,104 @@
       }
       return v;
     }
+
+    // ---------- Viewer voices (custom voice per person) ----------
+    const PLATFORM_NAMES = { any: 'Any platform', tiktok: 'TikTok', twitch: 'Twitch', youtube: 'YouTube' };
+
+    function fillVoiceOptions(select, selected) {
+      select.innerHTML = '';
+      const winGroup = el('optgroup', { label: '🖥️ Windows voices' });
+      voices.forEach(v => winGroup.appendChild(el('option', { value: 'win:' + v.name, textContent: v.name })));
+      select.appendChild(winGroup);
+      if (settings.fishVoices.length) {
+        const fishGroup = el('optgroup', { label: '🐟 Fish Audio voices' });
+        settings.fishVoices.forEach(f => fishGroup.appendChild(el('option', { value: 'fish:' + f.id, textContent: f.title })));
+        select.appendChild(fishGroup);
+      }
+      if (selected && !voiceExists(selected)) {
+        select.appendChild(el('option', { value: selected, textContent: '⚠ Voice removed - pick another' }));
+      }
+      if (selected) select.value = selected;
+    }
+
+    function renderCustomVoices() {
+      const keep = $('cvVoice').value;
+      fillVoiceOptions($('cvVoice'), keep);
+
+      const box = $('cvList');
+      box.innerHTML = '';
+      if (!settings.customVoices.length) {
+        box.appendChild(el('div', { className: 'empty', textContent: 'No viewer voices yet.' }));
+        return;
+      }
+      settings.customVoices.forEach((c, i) => {
+        const row = el('div', { className: 'ruleRow' + (voiceExists(c.voice) ? '' : ' missing') });
+        const title = el('div', { className: 'ruleTitle' }, [
+          c.platform !== 'any' ? el('span', { className: 'pf ' + c.platform, textContent: ({ tiktok: 'TT', twitch: 'TW', youtube: 'YT' })[c.platform] }) : null,
+          el('strong', { textContent: c.username }),
+          el('span', { className: 'coins', textContent: c.platform === 'any' ? 'any platform' : '' })
+        ]);
+        row.appendChild(title);
+
+        const sel = el('select', { className: 'small' });
+        sel.style.maxWidth = '260px';
+        fillVoiceOptions(sel, c.voice);
+        sel.addEventListener('change', () => {
+          c.voice = sel.value;
+          saveSettings();
+          renderCustomVoices();
+        });
+        row.appendChild(sel);
+
+        const testBtn = el('button', { className: 'small', textContent: '▶ Test' });
+        testBtn.addEventListener('click', () => {
+          setMsg('cvMsg', '');
+          testSpeak('Hey, it\'s ' + c.username + '. This is my voice now.', c.voice);
+        });
+        row.appendChild(testBtn);
+
+        const removeBtn = el('button', { className: 'small danger', textContent: 'Remove' });
+        removeBtn.addEventListener('click', () => {
+          settings.customVoices.splice(i, 1);
+          saveSettings();
+          renderCustomVoices();
+        });
+        row.appendChild(removeBtn);
+        box.appendChild(row);
+      });
+    }
+
+    $('cvAddBtn').addEventListener('click', () => {
+      const name = $('cvName').value.trim().replace(/^@/, '');
+      const platform = $('cvPlatform').value;
+      const voice = $('cvVoice').value;
+      if (!name) { setMsg('cvMsg', 'Type their username first.', true); return; }
+      if (!voice) { setMsg('cvMsg', 'Pick a voice first.', true); return; }
+      const existing = settings.customVoices.find(c => sameName(c.username, name) && c.platform === platform);
+      if (existing) {
+        existing.voice = voice;
+        setMsg('cvMsg', 'Updated ' + name + '\'s voice.');
+      } else {
+        settings.customVoices.push({ username: name, platform: platform, voice: voice });
+        setMsg('cvMsg', 'Added ' + name + '. Click ▶ Test to hear it.');
+      }
+      saveSettings();
+      $('cvName').value = '';
+      renderCustomVoices();
+    });
+    $('cvName').addEventListener('keydown', e => { if (e.key === 'Enter') $('cvAddBtn').click(); });
+
+    // Clicking a name in the chat feed fills in the Viewer Voices box
+    function pickViewerForVoice(name, platform) {
+      $('cvName').value = String(name || '').replace(/^@/, '');
+      $('cvPlatform').value = PLATFORM_NAMES[platform] ? platform : 'any';
+      document.querySelector('nav button[data-tab="ttsTab"]').click();
+      $('cvName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      $('cvVoice').focus();
+      setMsg('cvMsg', 'Pick a voice for ' + $('cvName').value + ', then click Add voice.');
+    }
+
+    renderCustomVoices();
 
     $('reshuffleBtn').addEventListener('click', () => {
       settings.viewerVoices = {};
@@ -2425,7 +2582,8 @@
       saveSettings();
       getAudioCtx();
       setConnUI(p, 'busy', 'Connecting...');
-      const r = await window.tater.connect(p, name);
+      const opts = p === 'twitch' ? { clientId: settings.twitchClientId, token: settings.twitchToken } : {};
+      const r = await window.tater.connect(p, name, opts);
       if (r.ok) {
         setConnUI(p, 'on', 'Connected');
         setStatus(PLATFORMS[p].name + ' connected.', 'on');
@@ -2462,6 +2620,76 @@
       setStatus('Disconnected.');
     });
 
+    // ---------- Twitch login (for follow alerts) ----------
+    $('twClientId').value = settings.twitchClientId || '';
+    $('twClientId').addEventListener('change', () => {
+      settings.twitchClientId = $('twClientId').value.trim();
+      saveSettings();
+    });
+
+    function renderTwitchLogin() {
+      const loggedIn = !!settings.twitchToken;
+      $('twLogoutBtn').style.display = loggedIn ? 'inline-block' : 'none';
+      $('twLoginBtn').textContent = loggedIn ? 'Log in again' : 'Log in with Twitch';
+      if (!$('twLoginMsg').dataset.locked) {
+        setMsg('twLoginMsg', loggedIn
+          ? '✔ Logged in as ' + settings.twitchLogin + '. Follow alerts turn on when Twitch is connected.'
+          : 'Log in once and Tater Talk can show Twitch follows. You must be the streamer or a mod of the channel.');
+      }
+    }
+
+    $('twLoginBtn').addEventListener('click', async () => {
+      settings.twitchClientId = $('twClientId').value.trim();
+      saveSettings();
+      if (!settings.twitchClientId) {
+        setMsg('twLoginMsg', 'Paste your Twitch Client ID first (from dev.twitch.tv).', true);
+        return;
+      }
+      setMsg('twLoginMsg', 'A Twitch login window opened. Log in and click Authorize...');
+      const r = await window.tater.twitchLogin(settings.twitchClientId);
+      if (!r.ok) {
+        setMsg('twLoginMsg', r.error || 'Login failed.', true);
+        return;
+      }
+      settings.twitchToken = r.token;
+      settings.twitchLogin = r.login;
+      saveSettings();
+      renderTwitchLogin();
+      if (connected.twitch) {
+        await disconnectPlatform('twitch');
+        await connectPlatform('twitch');
+      }
+    });
+
+    $('twLogoutBtn').addEventListener('click', async () => {
+      settings.twitchToken = '';
+      settings.twitchLogin = '';
+      saveSettings();
+      renderTwitchLogin();
+      if (connected.twitch) {
+        await disconnectPlatform('twitch');
+        await connectPlatform('twitch');
+      }
+    });
+
+    window.tater.onTwitchFollows(st => {
+      if (st.state === 'on') {
+        if (connected.twitch) connUI.twitch.msg.textContent = 'Connected + follow alerts';
+        setMsg('twLoginMsg', '✔ Follow alerts are on (logged in as ' + settings.twitchLogin + ').');
+      } else if (st.state === 'expired') {
+        settings.twitchToken = '';
+        saveSettings();
+        renderTwitchLogin();
+        setMsg('twLoginMsg', st.text, true);
+        setStatus('Twitch: ' + st.text, 'err');
+      } else {
+        setMsg('twLoginMsg', st.text, true);
+        setStatus('Twitch follows: ' + st.text, 'err');
+      }
+    });
+
+    renderTwitchLogin();
+
     window.tater.onStatus(st => {
       if (!PLATFORMS[st.platform]) return;
       setConnUI(st.platform, st.state === 'on' ? 'on' : 'off', st.text || 'Not connected');
@@ -2469,7 +2697,7 @@
     });
 
     // ---------- Feed lines ----------
-    function addLine(type, name, text, roles, platform) {
+    function addLine(type, name, text, roles, platform, handle) {
       const empty = $('feedEmpty');
       if (empty) empty.remove();
 
@@ -2484,7 +2712,10 @@
         if (roles.isSuperFan) div.appendChild(el('span', { className: 'tag fan', textContent: fanLabel }));
         if (roles.isFollower) div.appendChild(el('span', { className: 'tag follower', textContent: 'FOLLOWER' }));
       }
-      div.appendChild(el('span', { className: 'name', textContent: name }));
+      const nameEl = el('span', { className: 'name', textContent: name, title: 'Click to give ' + name + ' their own TTS voice' });
+      nameEl.style.cursor = 'pointer';
+      nameEl.addEventListener('click', () => pickViewerForVoice(handle || name, platform));
+      div.appendChild(nameEl);
       div.appendChild(el('span', { textContent: text }));
 
       const nearBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 80;
@@ -2508,7 +2739,7 @@
       if (introLastPlayed[key] && now - introLastPlayed[key] < cooldown) return;
       introLastPlayed[key] = now;
 
-      addLine('intro', name, 'just arrived! 🎬', roles, platform);
+      addLine('intro', name, 'just arrived! 🎬', roles, platform, handle);
       pushWidget('intro', { platform: platform, name: name, roles: roles });
       playSound(intro.url, intro.volume);
     }
@@ -2533,11 +2764,12 @@
       const handle = ev.user.handle;
       const p = ev.platform || 'tiktok';
       const roles = ev.roles || {};
+      const who = { platform: p, handle: handle, name: name };
 
       if (ev.type === 'chat') {
         counts.chat++; renderCounts();
         pushWidget('chat', { platform: p, name: name, text: ev.text, roles: roles });
-        const line = addLine('chat', name, ev.text, roles, p);
+        const line = addLine('chat', name, ev.text, roles, p, handle);
 
         if (p !== 'tiktok') {
           const key = p + ':' + String(handle).toLowerCase();
@@ -2552,7 +2784,7 @@
         if (!canUseTTS(roles)) return;
         const toRead = chatTextToRead(ev.text);
         if (!toRead) return;
-        enqueue(settings.sayName ? name + ' says ' + toRead : toRead, line, p + ':' + handle);
+        enqueue(settings.sayName ? name + ' says ' + toRead : toRead, line, who);
         return;
       }
 
@@ -2560,12 +2792,12 @@
         counts.gift++; renderCounts();
         rememberGift(ev);
         pushWidget('gift', { platform: p, name: name, giftName: ev.giftName, count: ev.count, coins: ev.coins, image: ev.image, roles: roles });
-        const line = addLine('gift', name, 'sent ' + ev.giftName + ' x' + ev.count + ' 🎁', roles, p);
+        const line = addLine('gift', name, 'sent ' + ev.giftName + ' x' + ev.count + ' 🎁', roles, p, handle);
         const sound = giftSoundFor(ev);
         if (sound) playSound(sound.url, sound.volume);
         if (settings.readGifts) {
           const times = ev.count > 1 ? ' times ' + ev.count : '';
-          enqueue(name + ' sent ' + ev.giftName + times + '. Thank you!', line, p + ':' + handle);
+          enqueue(name + ' sent ' + ev.giftName + times + '. Thank you!', line, who);
         }
         return;
       }
@@ -2573,14 +2805,14 @@
       if (ev.type === 'follow') { // TikTok
         counts.follow++; renderCounts();
         pushWidget('follow', { platform: p, name: name, roles: roles });
-        const line = addLine('follow', name, 'followed! 💚', roles, p);
+        const line = addLine('follow', name, 'followed! 💚', roles, p, handle);
         playSetSound('followSound');
-        if (settings.readFollows) enqueue(name + ' just followed. Welcome!', line, p + ':' + handle);
+        if (settings.readFollows) enqueue(name + ' just followed. Welcome!', line, who);
         return;
       }
 
       if (ev.type === 'join') { // TikTok
-        if (settings.showJoins) addLine('join', name, 'joined 👋', roles, p);
+        if (settings.showJoins) addLine('join', name, 'joined 👋', roles, p, handle);
         pushWidget('join', { platform: p, name: name, roles: roles });
         tryIntro(name, handle, roles, p);
         return;
@@ -2589,9 +2821,9 @@
       if (ev.type === 'bits') { // Twitch
         counts.gift++; renderCounts();
         pushWidget('bits', { platform: p, name: name, amount: ev.amount, text: ev.text, roles: roles });
-        const line = addLine('money', name, 'cheered ' + ev.amount + ' bits 💎' + (ev.text ? ' — ' + ev.text : ''), roles, p);
+        const line = addLine('money', name, 'cheered ' + ev.amount + ' bits 💎' + (ev.text ? ' — ' + ev.text : ''), roles, p, handle);
         playSetSound('twBits');
-        if (settings.readGifts) enqueue(name + ' cheered ' + ev.amount + ' bits' + paidText(ev.text), line, p + ':' + handle);
+        if (settings.readGifts) enqueue(name + ' cheered ' + ev.amount + ' bits' + paidText(ev.text), line, who);
         return;
       }
 
@@ -2599,9 +2831,9 @@
         counts.gift++; renderCounts();
         const what = ev.months > 1 ? 'resubscribed for ' + ev.months + ' months' : 'just subscribed';
         pushWidget('sub', { platform: p, name: name, months: ev.months, prime: ev.prime, roles: roles });
-        const line = addLine('money', name, what + (ev.prime ? ' with Prime' : '') + ' ⭐' + (ev.text ? ' — ' + ev.text : ''), roles, p);
+        const line = addLine('money', name, what + (ev.prime ? ' with Prime' : '') + ' ⭐' + (ev.text ? ' — ' + ev.text : ''), roles, p, handle);
         playSetSound('twSub');
-        if (settings.readGifts) enqueue(name + ' ' + what + '! Thank you!' + paidText(ev.text), line, p + ':' + handle);
+        if (settings.readGifts) enqueue(name + ' ' + what + '! Thank you!' + paidText(ev.text), line, who);
         return;
       }
 
@@ -2609,27 +2841,27 @@
         counts.gift++; renderCounts();
         const what = ev.count > 1 ? 'gifted ' + ev.count + ' subs' : 'gifted a sub' + (ev.recipient ? ' to ' + ev.recipient : '');
         pushWidget('subgift', { platform: p, name: name, count: ev.count, recipient: ev.recipient, roles: roles });
-        const line = addLine('money', name, what + ' 🎁', roles, p);
+        const line = addLine('money', name, what + ' 🎁', roles, p, handle);
         playSetSound('twGift');
-        if (settings.readGifts) enqueue(name + ' ' + what + '! Thank you!', line, p + ':' + handle);
+        if (settings.readGifts) enqueue(name + ' ' + what + '! Thank you!', line, who);
         return;
       }
 
       if (ev.type === 'raid') { // Twitch
         counts.follow++; renderCounts();
         pushWidget('raid', { platform: p, name: name, viewers: ev.viewers });
-        const line = addLine('raid', name, 'is raiding with ' + ev.viewers + ' viewers! 🚀', {}, p);
+        const line = addLine('raid', name, 'is raiding with ' + ev.viewers + ' viewers! 🚀', {}, p, handle);
         playSetSound('twRaid');
-        if (settings.readFollows) enqueue(name + ' is raiding with ' + ev.viewers + ' viewers! Welcome raiders!', line, p + ':' + handle);
+        if (settings.readFollows) enqueue(name + ' is raiding with ' + ev.viewers + ' viewers! Welcome raiders!', line, who);
         return;
       }
 
       if (ev.type === 'superchat') { // YouTube
         counts.gift++; renderCounts();
         pushWidget('superchat', { platform: p, name: name, amount: ev.amount, text: ev.text, roles: roles });
-        const line = addLine('money', name, 'sent a ' + ev.amount + ' Super Chat 💵' + (ev.text ? ' — ' + ev.text : ''), roles, p);
+        const line = addLine('money', name, 'sent a ' + ev.amount + ' Super Chat 💵' + (ev.text ? ' — ' + ev.text : ''), roles, p, handle);
         playSetSound('ytSuper');
-        if (settings.readGifts) enqueue(name + ' sent a ' + ev.amount + ' Super Chat' + paidText(ev.text), line, p + ':' + handle);
+        if (settings.readGifts) enqueue(name + ' sent a ' + ev.amount + ' Super Chat' + paidText(ev.text), line, who);
         return;
       }
     });

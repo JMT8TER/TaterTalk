@@ -179,7 +179,7 @@ function twRoles(tags) {
   };
 }
 
-async function connectTwitch(channel) {
+async function connectTwitch(channel, opts) {
   const tmi = require('tmi.js');
   channel = channel.toLowerCase();
   const client = new tmi.Client({
@@ -249,7 +249,197 @@ async function connectTwitch(channel) {
   });
 
   await client.connect();
+
+  // Follow alerts (only if you've logged in with Twitch)
+  if (opts && opts.token && opts.clientId) {
+    startTwitchFollows(channel, opts.clientId, opts.token).catch(err => {
+      const msg = (err && err.message) || String(err);
+      send('twitch-follows', { state: err && err.expired ? 'expired' : 'err', text: msg });
+    });
+  }
 }
+
+// =====================================================
+//  TWITCH FOLLOWS (EventSub - needs a Twitch login)
+// =====================================================
+const TWITCH_REDIRECT = 'http://localhost:4848/twitch-auth';
+const EVENTSUB_URL = 'wss://eventsub.wss.twitch.tv/ws';
+let twFollow = null;
+
+function getWebSocket() {
+  if (globalThis.WebSocket) return globalThis.WebSocket;
+  return require('ws');
+}
+
+async function helix(pathAndQuery, clientId, token, options) {
+  const res = await fetch('https://api.twitch.tv/helix/' + pathAndQuery, Object.assign({}, options, {
+    headers: { 'Client-Id': clientId, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(15000)
+  }));
+  let body = null;
+  try { body = await res.json(); } catch (e) {}
+  return { ok: res.ok, status: res.status, body: body };
+}
+
+async function validateTwitchToken(token) {
+  const res = await fetch('https://id.twitch.tv/oauth2/validate', {
+    headers: { Authorization: 'OAuth ' + token },
+    signal: AbortSignal.timeout(15000)
+  });
+  if (!res.ok) {
+    const e = new Error('Your Twitch login expired. Click "Log in with Twitch" again.');
+    e.expired = true;
+    throw e;
+  }
+  return res.json(); // { client_id, login, user_id, scopes, expires_in }
+}
+
+function stopTwitchFollows() {
+  const st = twFollow;
+  twFollow = null;
+  if (!st) return;
+  st.stopped = true;
+  try { st.ws && st.ws.close(); } catch (e) {}
+}
+
+async function startTwitchFollows(channel, clientId, token) {
+  stopTwitchFollows();
+  const me = await validateTwitchToken(token);
+  if (!(me.scopes || []).includes('moderator:read:followers')) {
+    const e = new Error('Your Twitch login is missing follow permission. Click "Log in again".');
+    e.expired = true;
+    throw e;
+  }
+
+  let broadcasterId = me.user_id;
+  if (String(channel).toLowerCase() !== String(me.login).toLowerCase()) {
+    const u = await helix('users?login=' + encodeURIComponent(channel), clientId, token);
+    const found = u.body && u.body.data && u.body.data[0];
+    if (!found) throw new Error('Could not find the Twitch channel "' + channel + '".');
+    broadcasterId = found.id;
+  }
+
+  const st = { stopped: false, ws: null, seen: new Set() };
+  twFollow = st;
+
+  function open(url, subscribe) {
+    if (st.stopped) return;
+    const WS = getWebSocket();
+    const ws = new WS(url);
+    st.ws = ws;
+
+    ws.onmessage = async e => {
+      let m;
+      try { m = JSON.parse(typeof e.data === 'string' ? e.data : e.data.toString()); } catch (x) { return; }
+      const type = m.metadata && m.metadata.message_type;
+
+      if (type === 'session_welcome' && subscribe) {
+        const r = await helix('eventsub/subscriptions', clientId, token, {
+          method: 'POST',
+          body: JSON.stringify({
+            type: 'channel.follow',
+            version: '2',
+            condition: { broadcaster_user_id: broadcasterId, moderator_user_id: me.user_id },
+            transport: { method: 'websocket', session_id: m.payload.session.id }
+          })
+        });
+        if (st.stopped) return;
+        if (r.ok) {
+          send('twitch-follows', { state: 'on', text: 'Follow alerts on' });
+        } else {
+          let text = (r.body && r.body.message) || ('Twitch error ' + r.status);
+          if (r.status === 403) text = 'Twitch says you must be the streamer or a mod of ' + channel + ' to see its follows.';
+          if (r.status === 401) text = 'Your Twitch login expired. Click "Log in with Twitch" again.';
+          send('twitch-follows', { state: r.status === 401 ? 'expired' : 'err', text: text });
+          stopTwitchFollows();
+        }
+      } else if (type === 'notification') {
+        const id = m.metadata.message_id;
+        if (st.seen.has(id)) return;
+        st.seen.add(id);
+        if (st.seen.size > 500) st.seen.clear();
+        const ev = (m.payload && m.payload.event) || {};
+        sendEvent('twitch', {
+          type: 'follow',
+          user: { handle: String(ev.user_login || '').toLowerCase() || 'someone', nickname: ev.user_name || ev.user_login || 'someone' },
+          roles: {}
+        });
+      } else if (type === 'session_reconnect') {
+        open(m.payload.session.reconnect_url, false);
+      } else if (type === 'revocation') {
+        send('twitch-follows', { state: 'err', text: 'Twitch turned off follow alerts (' + ((m.payload.subscription || {}).status || 'revoked') + '). Try logging in again.' });
+      }
+    };
+
+    ws.onclose = () => {
+      if (st.stopped || twFollow !== st || st.ws !== ws) return;
+      // Unexpected drop: reconnect and subscribe again
+      setTimeout(() => open(EVENTSUB_URL, true), 5000);
+    };
+  }
+
+  open(EVENTSUB_URL, true);
+}
+
+// Opens a Twitch login window and catches the login token
+ipcMain.handle('twitch-login', async (event, clientId) => {
+  clientId = String(clientId || '').trim();
+  if (!clientId) return { ok: false, error: 'Paste your Twitch Client ID first.' };
+
+  const stateCode = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  const authUrl = 'https://id.twitch.tv/oauth2/authorize?' + new URLSearchParams({
+    response_type: 'token',
+    client_id: clientId,
+    redirect_uri: TWITCH_REDIRECT,
+    scope: 'moderator:read:followers',
+    state: stateCode,
+    force_verify: 'true'
+  }).toString();
+
+  const result = await new Promise(resolve => {
+    const authWin = new BrowserWindow({
+      width: 520, height: 780, parent: win, title: 'Log in with Twitch',
+      autoHideMenuBar: true, backgroundColor: '#0e0e10',
+      webPreferences: { partition: 'persist:twitchauth' }
+    });
+    let done = false;
+    const finish = r => {
+      if (done) return;
+      done = true;
+      resolve(r);
+      if (!authWin.isDestroyed()) authWin.close();
+    };
+    const check = url => {
+      if (!url || !String(url).startsWith(TWITCH_REDIRECT)) return false;
+      const [beforeHash, hash] = String(url).split('#');
+      const query = beforeHash.split('?')[1] || '';
+      const p = new URLSearchParams(hash || query);
+      if (p.get('access_token')) {
+        if (p.get('state') && p.get('state') !== stateCode) finish({ ok: false, error: 'Login did not match. Try again.' });
+        else finish({ ok: true, token: p.get('access_token') });
+      } else {
+        const why = p.get('error_description') || p.get('error') || 'Login was cancelled.';
+        let msg = 'Twitch login failed: ' + why;
+        if (/redirect/i.test(why)) msg = 'Twitch says the redirect URL is wrong. In your Twitch app on dev.twitch.tv, the OAuth Redirect URL must be exactly ' + TWITCH_REDIRECT;
+        finish({ ok: false, error: msg });
+      }
+      return true;
+    };
+    authWin.webContents.on('will-redirect', (ev, url) => { if (check(ev.url || url)) ev.preventDefault(); });
+    authWin.webContents.on('will-navigate', (ev, url) => { if (check(ev.url || url)) ev.preventDefault(); });
+    authWin.webContents.on('did-navigate', (ev, url) => { check(url); });
+    authWin.on('closed', () => finish({ ok: false, error: 'The login window was closed before finishing.' }));
+    authWin.loadURL(authUrl).catch(() => {});
+  });
+
+  if (!result.ok) return result;
+  try {
+    const me = await validateTwitchToken(result.token);
+    return { ok: true, token: result.token, login: me.login, userId: me.user_id };
+  } catch (err) {
+    return { ok: false, error: 'Logged in, but Twitch would not confirm it: ' + ((err && err.message) || err) };
+  }
+});
 
 // =====================================================
 //  YOUTUBE (reads live chat - no API key needed)
@@ -315,12 +505,12 @@ async function disconnectPlatform(platform) {
   if (!c) return;
   try {
     if (platform === 'tiktok') c.disconnect();
-    if (platform === 'twitch') await c.disconnect();
+    if (platform === 'twitch') { stopTwitchFollows(); await c.disconnect(); }
     if (platform === 'youtube') c.stop();
   } catch (e) {}
 }
 
-ipcMain.handle('platform-connect', async (event, platform, name) => {
+ipcMain.handle('platform-connect', async (event, platform, name, opts) => {
   name = String(name || '').trim();
   if (platform !== 'youtube') name = name.replace(/^@/, '');
   if (!name) return { ok: false, error: 'Type a name first.' };
@@ -328,7 +518,7 @@ ipcMain.handle('platform-connect', async (event, platform, name) => {
   await disconnectPlatform(platform);
   try {
     if (platform === 'tiktok') await connectTikTok(name);
-    else if (platform === 'twitch') await connectTwitch(name);
+    else if (platform === 'twitch') await connectTwitch(name, opts || {});
     else if (platform === 'youtube') await connectYouTube(name);
     else return { ok: false, error: 'Unknown platform.' };
     return { ok: true };
@@ -381,6 +571,12 @@ function handleWidgetRequest(req, res) {
     res.write('data: ' + JSON.stringify({ type: 'settings', data: widgetSettings }) + '\n\n');
     widgetClients.add(res);
     req.on('close', () => widgetClients.delete(res));
+    return;
+  }
+
+  if (pathname === '/twitch-auth') {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end('<body style="background:#0e0e10;color:#fff;font-family:sans-serif;text-align:center;padding-top:80px">Logged in! You can close this window.</body>');
     return;
   }
 

@@ -3,7 +3,8 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('tater', {
-  connect: (platform, name) => ipcRenderer.invoke('platform-connect', platform, name),
+  connect: (platform, name, opts) => ipcRenderer.invoke('platform-connect', platform, name, opts),
+  twitchLogin: (clientId) => ipcRenderer.invoke('twitch-login', clientId),
   disconnect: (platform) => ipcRenderer.invoke('platform-disconnect', platform),
   pickSound: () => ipcRenderer.invoke('pick-sound'),
   importSoundFolder: () => ipcRenderer.invoke('import-sound-folder'),
@@ -15,5 +16,6 @@ contextBridge.exposeInMainWorld('tater', {
   copyText: (text) => ipcRenderer.invoke('copy-text', text),
   openLink: (url) => ipcRenderer.invoke('open-link', url),
   onEvent: (callback) => ipcRenderer.on('stream-event', (e, data) => callback(data)),
-  onStatus: (callback) => ipcRenderer.on('stream-status', (e, data) => callback(data))
+  onStatus: (callback) => ipcRenderer.on('stream-status', (e, data) => callback(data)),
+  onTwitchFollows: (callback) => ipcRenderer.on('twitch-follows', (e, data) => callback(data))
 });

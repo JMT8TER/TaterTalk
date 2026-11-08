@@ -1,7 +1,7 @@
 {
   "name": "tatertalk",
   "productName": "Tater Talk",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Tater Talk - TTS, sounds, intros and on-stream alerts for TikTok, Twitch and YouTube",
   "main": "main.js",
   "scripts": {
