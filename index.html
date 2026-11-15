@@ -297,6 +297,7 @@
     .msg.join { opacity: .6; }
     .msg.intro { border-left-color: #c77dff; background: linear-gradient(90deg, rgba(199,125,255,.15), var(--panel) 65%); }
     .msg.intro .name { color: #d9a8ff; }
+    .msg .noread { font-size: 12px; color: var(--muted); margin-left: 8px; font-style: italic; }
     .msg.speaking { outline: 2px solid var(--glow); box-shadow: 0 0 14px var(--glow-soft); }
     .tag {
       font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 3px;
@@ -1651,6 +1652,8 @@
     let ttsToken = 0;
     let currentTTSAudio = null;
     let currentDone = null;
+    let currentUtterance = null;
+    let ttsWatchdog = null;
     let lastFishError = '';
 
     function cleanText(text) {
@@ -1672,13 +1675,25 @@
     }
 
     // Decides what (if anything) to read from a chat message.
+    // Removes invisible characters and turns full-width "！" into "!"
+    function normalizeChat(t) {
+      return String(t || '')
+        .replace(/[\u200B-\u200D\u2060\uFEFF]/g, '')
+        .replace(/\uFF01/g, '!')
+        .replace(/\uFF1F/g, '?')
+        .trim();
+    }
+
     function chatTextToRead(rawText) {
-      let text = String(rawText || '').trim();
+      let text = normalizeChat(rawText);
       if (settings.ttsCommandOn) {
-        const cmd = (settings.ttsCommand || '!tts').trim().toLowerCase();
+        const cmd = normalizeChat(settings.ttsCommand || '!tts').toLowerCase();
         if (!text.toLowerCase().startsWith(cmd)) return null;
         const rest = text.slice(cmd.length);
-        if (rest && !/^\s/.test(rest)) return null;
+        // Word commands like "!tts" need a space after them (so "!ttsss" doesn't count).
+        // Symbol-only commands like "!" or "?" don't: "!hello" works.
+        const needsSpace = /[a-z0-9]$/i.test(cmd);
+        if (needsSpace && rest && !/^\s/.test(rest)) return null;
         text = rest.trim();
         return text || null;
       }
@@ -1686,11 +1701,18 @@
       return text || null;
     }
 
+    // Puts a 🔇 on a chat line with the reason it wasn't read (hover to see it)
+    function markNotRead(lineElement, reason) {
+      if (!lineElement || lineElement.querySelector('.noread')) return;
+      const m = el('span', { className: 'noread', textContent: ' 🔇 ' + reason, title: 'Not read: ' + reason });
+      lineElement.appendChild(m);
+    }
+
     function enqueue(text, lineElement, handle) {
-      if (!settings.ttsOn) return;
+      if (!settings.ttsOn) { markNotRead(lineElement, 'TTS is off'); return; }
       text = cleanText(text);
       if (!text) return;
-      if (ttsQueue.length > 30) return;
+      if (ttsQueue.length > 30) { markNotRead(lineElement, 'too many messages waiting'); return; }
       ttsQueue.push({ text, lineElement, voiceKey: resolveVoice(handle) });
       speakNext();
     }
@@ -1735,6 +1757,7 @@
       }
 
       const u = makeUtterance(text, voiceKey);
+      currentUtterance = u; // keep a hold on it (Chrome bug: otherwise "finished" may never fire)
       u.onend = finish;
       u.onerror = finish;
       speechSynthesis.speak(u);
@@ -1751,6 +1774,7 @@
       const finish = () => {
         if (finished) return;
         finished = true;
+        clearTimeout(ttsWatchdog);
         if (item.lineElement) item.lineElement.classList.remove('speaking');
         if (token === ttsToken) {
           speaking = false;
@@ -1760,6 +1784,18 @@
         }
       };
       currentDone = finish;
+
+      // Safety timer: if a message is stuck, skip it so the next ones still get read
+      const maxMs = 25000 + item.text.length * 120 / Math.max(0.5, Number(settings.rate) || 1);
+      clearTimeout(ttsWatchdog);
+      ttsWatchdog = setTimeout(() => {
+        if (finished || token !== ttsToken) return;
+        console.log('[Tater Talk] TTS message took too long, skipping it.');
+        speechSynthesis.cancel();
+        if (currentTTSAudio) { currentTTSAudio.pause(); currentTTSAudio = null; }
+        finish();
+      }, maxMs);
+
       playVoice(item.text, item.voiceKey || settings.ttsVoice, token, finish);
     }
 
@@ -2779,11 +2815,21 @@
           }
         }
 
-        if (!settings.readChat) return;
-        if (!platformTTSAllowed(p)) return;
-        if (!canUseTTS(roles)) return;
+        // Only explain skips for messages that look like they wanted TTS
+        const cmdText = normalizeChat(settings.ttsCommand || '!tts');
+        const wanted = settings.ttsCommandOn
+          ? normalizeChat(ev.text).startsWith(cmdText.charAt(0))
+          : true;
+        const skip = reason => { if (wanted) markNotRead(line, reason); };
+
+        if (!settings.readChat) return skip('"Chat messages" is unchecked');
+        if (!platformTTSAllowed(p)) return skip(PLATFORMS[p].name + ' is unchecked in "Read chat from"');
+        if (!canUseTTS(roles)) return skip('not in a group allowed to use TTS');
         const toRead = chatTextToRead(ev.text);
-        if (!toRead) return;
+        if (!toRead) {
+          if (settings.ttsCommandOn) return skip('doesn\'t start with "' + cmdText + '"' + (/[a-z0-9]$/i.test(cmdText) ? ' + a space' : ''));
+          return skip('starts with "!" and "Skip other ! commands" is on');
+        }
         enqueue(settings.sayName ? name + ' says ' + toRead : toRead, line, who);
         return;
       }
